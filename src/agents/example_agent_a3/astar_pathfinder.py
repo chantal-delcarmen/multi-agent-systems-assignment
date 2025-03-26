@@ -35,6 +35,12 @@ class AStarPathfinder:
         self.came_from = {}
         self.cost_so_far = {}
 
+        # Debugging print statements - REMOVE BEFORE SUBMISSION
+        print(f"START: {start_cell.location}")
+        print(f"GOAL: {goal_cell.location}")
+        print(f"Path from {start_cell.location} to {goal_cell.location}:")
+
+
         heapq.heappush(self.frontier, (0, start_cell.location))
         self.came_from[start_cell.location] = None
         self.cost_so_far[start_cell.location] = 0
@@ -55,6 +61,10 @@ class AStarPathfinder:
                     self.came_from[neighbour.location] = current_cell.location
 
         # Reconstruct path
+        if goal_cell.location not in self.came_from:
+            print("No path found to goal")
+            return []
+    
         path = []
         current_cell = goal_cell
         while current_cell != start_cell:
@@ -62,4 +72,10 @@ class AStarPathfinder:
             current_cell = self.world.get_cell_at(self.came_from[current_cell.location])
         path.append(start_cell)
         path.reverse()
+
+        # Debugging print statements - REMOVE BEFORE SUBMISSION
+        print("Final path:")
+        for step in path:
+            print(f"Step: {step.location}")
+
         return path
