@@ -1,0 +1,303 @@
+{
+  "settings": {
+    "world_info": {
+      "size": {
+        "width": 5,
+        "height": 5
+      },
+      "seed": 7218,
+      "world_file_levels": {
+        "high": 12,
+        "mid": 9,
+        "low": 5
+      },
+      "agent_energy": 3
+    }
+  },
+  "spawn_locs": [
+    {
+      "x": 0,
+      "y": 0,
+      "type": "any"
+    }
+  ],
+  "cell_types": {
+    "fire_cells": [
+      {
+        "x": 4,
+        "y": 3
+      }
+    ],
+    "killer_cells": [
+      {
+        "x": 3,
+        "y": 4
+      }
+    ],
+    "charging_cells": [
+      {
+        "x": 2,
+        "y": 2
+      }
+    ]
+  },
+  "stacks": [
+    {
+      "cell_loc": {
+        "x": 0,
+        "y": 0
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 0,
+        "y": 1
+      },
+      "move_cost": 1,
+      "contents": [
+        {
+          "type": "rb",
+          "arguments": {
+            "remove_energy": 2,
+            "remove_agents": 2
+          }
+        }
+      ]
+    },
+    {
+      "cell_loc": {
+        "x": 0,
+        "y": 2
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 0,
+        "y": 3
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 0,
+        "y": 4
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 1,
+        "y": 0
+      },
+      "move_cost": 1,
+      "contents": [
+        {
+          "type": "rb",
+          "arguments": {
+            "remove_energy": 2,
+            "remove_agents": 2
+          }
+        }
+      ]
+    },
+    {
+      "cell_loc": {
+        "x": 1,
+        "y": 1
+      },
+      "move_cost": 1,
+      "contents": [
+        {
+          "type": "rb",
+          "arguments": {
+            "remove_energy": 2,
+            "remove_agents": 2
+          }
+        }
+      ]
+    },
+    {
+      "cell_loc": {
+        "x": 1,
+        "y": 2
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 1,
+        "y": 3
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 1,
+        "y": 4
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 2,
+        "y": 0
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 2,
+        "y": 1
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 2,
+        "y": 2
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 2,
+        "y": 3
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 2,
+        "y": 4
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 3,
+        "y": 0
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 3,
+        "y": 1
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 3,
+        "y": 2
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 3,
+        "y": 3
+      },
+      "move_cost": 5,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 3,
+        "y": 4
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 4,
+        "y": 0
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 4,
+        "y": 1
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 4,
+        "y": 2
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 4,
+        "y": 3
+      },
+      "move_cost": 1,
+      "contents": []
+    },
+    {
+      "cell_loc": {
+        "x": 4,
+        "y": 4
+      },
+      "move_cost": 1,
+      "contents": [
+        {
+          "type": "rb",
+          "arguments": {
+            "remove_energy": 2,
+            "remove_agents": 2
+          }
+        },
+        {
+          "type": "sv",
+          "arguments": {
+            "energy_level": 100,
+            "body_mass": 0,
+            "mental_state": 0,
+            "damage_factor": 0
+          }
+        },
+        {
+          "type": "sv",
+          "arguments": {
+            "energy_level": 100,
+            "body_mass": 0,
+            "mental_state": 0,
+            "damage_factor": 0
+          }
+        },
+        {
+          "type": "rb",
+          "arguments": {
+            "remove_energy": 1,
+            "remove_agents": 1
+          }
+        }
+      ]
+    }
+  ]
+}
