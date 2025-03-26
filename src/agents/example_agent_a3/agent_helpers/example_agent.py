@@ -22,10 +22,10 @@ from aegis import (
 )
 from a3.agent import BaseAgent, Brain, AgentController
 from aegis.api.location import create_location 
-from .agent_helpers.astar_pathfinder import AStarPathfinder
-from .agent_helpers.agent_memory import AgentMemory
-from .agent_helpers.communication_manager import CommunicationManager
-from .agent_helpers.energy_manager import EnergyManager
+from .astar_pathfinder import AStarPathfinder
+from .agent_memory import AgentMemory
+from .communication_manager import CommunicationManager
+from .energy_manager import EnergyManager
 
 
 """ 
