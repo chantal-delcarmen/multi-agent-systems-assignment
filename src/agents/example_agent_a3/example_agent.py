@@ -2,6 +2,9 @@ from typing import override
 
 # If you need to import anything, add it to the import below.
 from aegis import (
+    AgentID,
+    Location,
+    SLEEP,
     END_TURN,
     SEND_MESSAGE_RESULT,
     MOVE,
@@ -18,7 +21,8 @@ from aegis import (
     Survivor,
 )
 from a3.agent import BaseAgent, Brain, AgentController
-
+from aegis.api.location import create_location 
+from .astar_pathfinder import AStarPathfinder
 
 class ExampleAgent(Brain):
     def __init__(self) -> None:
@@ -86,11 +90,34 @@ class ExampleAgent(Brain):
             self.send_and_end_turn(TEAM_DIG())
             return
 
-        # Default action: Move the agent north if no other specific conditions are met.
-        self.send_and_end_turn(MOVE(Direction.NORTH))
+        # Find a goal (survivor location)
+        goal_cell = self.find_survivor(world)
+        if goal_cell is not None:
+            start_cell = cell
+            pathfinder = AStarPathfinder(world, self._agent)
+            path = pathfinder.find_path(start_cell, goal_cell)
+
+            if len(path) > 1:
+                next_move = path[1]
+                direction = start_cell.location.direction_to(next_move.location)
+                self.send_and_end_turn(MOVE(direction))
+                return
+            else:
+                # If the path is empty, stay in place
+                self.send_and_end_turn(MOVE(Direction.CENTER))
+                return
+
 
     def send_and_end_turn(self, command: AgentCommand):
         """Send a command and end your turn."""
         self._agent.log(f"SENDING {command}")
         self._agent.send(command)
         self._agent.send(END_TURN())
+
+    # Find survivor (goal cell) in the world
+    def find_survivor(self, world):
+        for row in world.get_world_grid():
+            for cell in row:
+                if cell.has_survivors:
+                    return cell
+        return None
