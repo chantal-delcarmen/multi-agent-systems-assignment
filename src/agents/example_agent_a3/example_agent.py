@@ -22,10 +22,14 @@ from aegis import (
 )
 from a3.agent import BaseAgent, Brain, AgentController
 from aegis.api.location import create_location 
-from .agent_helpers.astar_pathfinder import AStarPathfinder
+
+# Helper imports
 from .agent_helpers.agent_memory import AgentMemory
 from .agent_helpers.communication_manager import CommunicationManager
 from .agent_helpers.energy_manager import EnergyManager
+from .agent_helpers.astar_pathfinder import AStarPathfinder
+from .agent_helpers.goal_planner import GoalPlanner
+from .agent_helpers.leader_coordinator import LeaderCoordinator
 
 
 """ 
@@ -36,15 +40,16 @@ class ExampleAgent(Brain):
     def __init__(self) -> None:
         super().__init__()
         self._agent: AgentController = BaseAgent.get_agent()
-
-        # Initialize the agent's components
-        self.energy_manager = EnergyManager(self._agent)
-        self.message_handler = MessageHandler(self._agent)
+        self.memory = AgentMemory(self._agent.get_agent_id().id)
+        self.comms = CommunicationManager(self.memory)
+        self.energy_manager = EnergyManager(self.memory)
         self.goal_planner = GoalPlanner(self._agent)
+        self.leader = LeaderCoordinator(self._agent)
 
     # Handle functions:
     # You need to implement these functions
-
+    # TODO: connect helper classes to this one 
+    
     # Handle the result of sending a message
     @override
     def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
