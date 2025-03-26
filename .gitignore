@@ -1,0 +1,16 @@
+replay.txt
+client
+.venv
+venv
+WorldInfoFile.out
+*__pycache__*
+ 
+# Editor directories and files
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo *.ntvs*
+*.njsproj
+*.sln
+*.sw?
