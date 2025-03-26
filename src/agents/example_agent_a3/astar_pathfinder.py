@@ -1,7 +1,10 @@
 import heapq
-
 from aegis.api.location import create_location
 from aegis.common.direction import Direction
+
+# Code resused from CPSC383 Assignment 1 [Chantal del Carmen]
+# A* pathfinding algorithm adapted from:
+# https://www.redblobgames.com/pathfinding/a-star/implementation.html
 
 class AStarPathfinder:
     def __init__(self, world, agent):
