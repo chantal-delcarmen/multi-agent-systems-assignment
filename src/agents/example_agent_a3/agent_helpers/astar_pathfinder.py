@@ -10,6 +10,14 @@ to a goal location
 Code resused from CPSC383 Assignment 1 [Chantal del Carmen]
 A* pathfinding algorithm adapted from:
 https://www.redblobgames.com/pathfinding/a-star/implementation.html 
+
+Authors: 
+Chantal del Carmen, Zainab Majid, Mohammad Akif Hasan, Vincent Iyegbuye
+
+Course: CPSC 383 - Winter 2025 | T05
+Assignment 3 - Multi-Agent Systems
+Mar 30, 2025
+
 """
 
 

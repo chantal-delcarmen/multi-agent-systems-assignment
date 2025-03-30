@@ -31,10 +31,17 @@ from .agent_helpers.astar_pathfinder import AStarPathfinder
 from .agent_helpers.goal_planner import GoalPlanner
 from .agent_helpers.leader_coordinator import LeaderCoordinator
 
-
-""" 
+"""
 Class ExampleAgent:
 This class is responsible for implementing the agent's logic
+
+Authors: 
+Chantal del Carmen, Zainab Majid, Mohammad Akif Hasan, Vincent Iyegbuye
+
+Course: CPSC 383 - Winter 2025 | T05
+Assignment 3 - Multi-Agent Systems
+Mar 30, 2025
+
 """
 class ExampleAgent(Brain):
     def __init__(self) -> None:

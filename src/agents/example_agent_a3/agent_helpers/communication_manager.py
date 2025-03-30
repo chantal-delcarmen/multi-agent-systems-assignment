@@ -1,6 +1,14 @@
 """
-CommunicationManager: Responsible for formatting and parsing inter-agent
+Class CommunicationManager: Responsible for formatting and parsing inter-agent
 messages for coordination and task updates.
+
+Authors: 
+Chantal del Carmen, Zainab Majid, Mohammad Akif Hasan, Vincent Iyegbuye
+
+Course: CPSC 383 - Winter 2025 | T05
+Assignment 3 - Multi-Agent Systems
+Mar 30, 2025
+
 """
 
 class CommunicationManager:
