@@ -1,6 +1,14 @@
 """
-AgentMemory: Stores per-agent state like location, energy level,
+Class AgentMemory: Stores per-agent state like location, energy level,
 assigned task, known survivor locations, and received messages.
+
+Authors: 
+Chantal del Carmen, Zainab Majid, Mohammad Akif Hasan, Vincent Iyegbuye
+
+Course: CPSC 383 - Winter 2025 | T05
+Assignment 3 - Multi-Agent Systems
+Mar 30, 2025
+
 """
 
 class AgentMemory:

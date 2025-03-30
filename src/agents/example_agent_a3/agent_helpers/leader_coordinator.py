@@ -1,6 +1,14 @@
 """
-LeaderCoordinator: Used by the leader to assign tasks, track survivor
+Class LeaderCoordinator: Used by the leader to assign tasks, track survivor
 assignments, and coordinate completion.
+
+Authors: 
+Chantal del Carmen, Zainab Majid, Mohammad Akif Hasan, Vincent Iyegbuye
+
+Course: CPSC 383 - Winter 2025 | T05
+Assignment 3 - Multi-Agent Systems
+Mar 30, 2025
+
 """
 
 class LeaderCoordinator:
