@@ -52,6 +52,7 @@ class ExampleAgent(Brain):
         self.energy_manager = EnergyManager(self.memory)
         self.goal_planner = GoalPlanner(self._agent)
         self.leader = LeaderCoordinator(self._agent)
+        self.turn_counter = 0   # Keep track of number of turns
 
     # Handle functions:
     # You need to implement these functions
@@ -145,6 +146,8 @@ class ExampleAgent(Brain):
         """Send a command and end your turn."""
         self._agent.log(f"SENDING {command}")
         self._agent.send(command)
+        self.turn_counter += 1   # Increment the turn number
+        AgentMemory.set_turn_counter(self.turn_counter) # Update the turn number in memory
         self._agent.send(END_TURN())
 
     # Find survivor (goal cell) in the world

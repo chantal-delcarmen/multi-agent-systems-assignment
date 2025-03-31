@@ -31,3 +31,22 @@ class TeamTaskManager:
         # Task Format: 
         self.team_dig_tasks = {}
         self.current_task = None
+
+    def add_task(self, location, current_turn, estimated_travel_time):
+        """
+        Add a new team dig task to the manager.
+        """
+
+        buffer_time = 2  # Buffer time to account for travel delays
+
+        # Check if the task already exists
+        if location not in self.team_dig_tasks:
+            self.team_dig_tasks[location] = {
+                'assigned_agents': set(),       # Set of agents assigned to the task
+                'required_agents': 2,           # Number of agents required for TEAM_DIG
+                'completed': False,             # Flag to check if task is completed
+                'planned_turn': (               # Turn when the task is planned to be executed
+                    current_turn + estimated_travel_time + buffer_time
+                ),
+                'dig_count': 0                  # Counter for # of digs completed
+            }
