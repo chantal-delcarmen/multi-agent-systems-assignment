@@ -119,10 +119,16 @@ def test_call_agents_to_meet():
     current_turn = 5
     estimated_travel_time = 3
 
+    # Add a task and assign agents
     manager.add_task(location, current_turn, estimated_travel_time)
+    manager.coordinate_team_dig("Agent1", location)
+    manager.coordinate_team_dig("Agent2", location)
 
     # Call agents to meet at the location
-    manager.call_agents_to_meet(location)
+    notifications = manager.call_agents_to_meet(location)
 
-    # Check if the meeting is logged correctly (this would depend on your logging implementation)
-    assert True  # Placeholder for actual check, replace with appropriate assertion based on your logging system
+    # Verify the notifications
+    assert len(notifications) == 2
+    assert "Notify Agent1 to meet at H8 for TEAM_DIG." in notifications
+    assert "Notify Agent2 to meet at H8 for TEAM_DIG." in notifications
+

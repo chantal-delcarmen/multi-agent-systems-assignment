@@ -115,14 +115,19 @@ class TeamTaskManager:
         """
         Notify agents to meet at a specific location for TEAM_DIG
         """
+        notifications = []  # List to store notifications for agents
+
+        # Check if the location is in the task list and if the task is not completed
         if location in self.team_dig_tasks:
             task = self.team_dig_tasks[location]
+
+            # Check if the task is not completed and if agent is not already assigned
             if task['completed'] == False:
                 for agent_id in task['assigned_agents']:
-                    # Notify each agent to meet at the location
-                    print(f"Notify {agent_id} to meet at {location} for TEAM_DIG.")
-                return True
-        return False
+                    notification = f"Notify {agent_id} to meet at {location} for TEAM_DIG."
+                    notifications.append(notification)
+                    print(notification)  # Keep the print for runtime behavior
+        return notifications
 
     def remove_completed_task(self, location):
         """
@@ -136,7 +141,7 @@ class TeamTaskManager:
     
     def remove_completed_tasks(self):
         """
-        Remove any and all completed tasks from the task list
+        Remove any completed tasks from the task list
         """
         completed_tasks = [location for location, task in self.team_dig_tasks.items() if task['completed']]
         for location in completed_tasks:
