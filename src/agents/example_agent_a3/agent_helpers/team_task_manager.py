@@ -69,6 +69,15 @@ class TeamTaskManager:
         # If location is not in team_dig_tasks list, return False (TEAM_DIG not needed)
         return False
     
+    def is_enough_agents(self, location):
+        """
+        Check if enough agents are available for TEAM_DIG at the location
+        """
+        if location in self.team_dig_tasks:
+            task = self.team_dig_tasks[location]
+            return len(task['assigned_agents']) >= task['required_agents']
+        return False
+
     # Coordinate agents to dig at the same time at correct locations
     def coordinate_team_dig(self, agent_id, location):
         """
@@ -76,15 +85,24 @@ class TeamTaskManager:
         """
         if location in self.team_dig_tasks:
             task = self.team_dig_tasks[location]
-            task['assigned_agents'].add(agent_id)
-            task['dig_count'] += 1
+
+            #If task already completed, skip it
+            if task['completed']:
+                return False
+            
+            if agent_id not in task['assigned_agents']:
+                task['assigned_agents'].add(agent_id)  # Add agent to the assigned agents set
+                task['dig_count'] += 1  # Increment the dig count
 
             # Check if enough agents have arrived to initiate TEAM_DIG
-            if len(task['assigned_agents']) >= task['required_agents']:
-                self.current_task = location
-                return True  # Indicate that the team dig can proceed
+            if self.is_enough_agents(location):
+                self.current_task = location # Set the current task to the location
+                task['completed'] = True    # Mark task as completed
+                return True                 # Indicate that the team dig can proceed
 
-        return False  # Not enough agents for team dig
+        return False  # Not enough agents yet
+
+
     
     # Implement task coordination logic (eg. “meet at (x, y)”)
     # Handle multi-agent decisions based on messages
