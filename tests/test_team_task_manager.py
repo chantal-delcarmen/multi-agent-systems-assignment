@@ -89,3 +89,11 @@ def test_duplicate_agent_assignment():
     task = manager.team_dig_tasks[location]
     assert len(task["assigned_agents"]) == 1  # Only one unique agent
     assert task["dig_count"] == 1  # Dig count should not increase for duplicate assignments
+
+def test_task_does_not_exist():
+    manager = TeamTaskManager()
+    location = "F6"
+
+    # Try to assign an agent to a non-existent task
+    result = manager.coordinate_team_dig("Agent1", location)
+    assert result is False  # Task does not exist, so assignment should fail
