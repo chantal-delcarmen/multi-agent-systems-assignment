@@ -19,6 +19,13 @@ class AgentMemory:
         self.task = None
         self.known_survivors = set()
         self.messages_received = []
+        self.turn_counter = 0
+
+    def set_turn_counter(self, turn_counter):
+        self.turn_counter = turn_counter
+    
+    def get_turn_counter(self):
+        return self.turn_counter
 
     def update_location(self, x, y):
         pass
