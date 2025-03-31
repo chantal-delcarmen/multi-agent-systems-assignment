@@ -92,18 +92,67 @@ class TeamTaskManager:
             
             if agent_id not in task['assigned_agents']:
                 task['assigned_agents'].add(agent_id)  # Add agent to the assigned agents set
+                self.call_agents_to_meet(location)  # Notify agents to meet at the location
                 task['dig_count'] += 1  # Increment the dig count
 
             # Check if enough agents have arrived to initiate TEAM_DIG
             if self.is_enough_agents(location):
                 self.current_task = location # Set the current task to the location
                 task['completed'] = True    # Mark task as completed
+                self.remove_completed_task(location) # Remove the task from the list
+                
+                # Notify agents that the task is completed
+                # This could be a message to other agents or an update in the memory
+                # Example: self.communication_manager.send_message("TASK_COMPLETED", location)
+                # For now, we just print a message
+                print(f"TEAM_DIG completed at {location} by agents: {task['assigned_agents']}")
+                
                 return True                 # Indicate that the team dig can proceed
 
         return False  # Not enough agents yet
-
-
     
-    # Implement task coordination logic (eg. “meet at (x, y)”)
+    def call_agents_to_meet(self, location):
+        """
+        Notify agents to meet at a specific location for TEAM_DIG
+        """
+        if location in self.team_dig_tasks:
+            task = self.team_dig_tasks[location]
+            if task['completed'] == False:
+                for agent_id in task['assigned_agents']:
+                    # Notify each agent to meet at the location
+                    print(f"Notify {agent_id} to meet at {location} for TEAM_DIG.")
+                return True
+        return False
+
+    def remove_completed_task(self, location):
+        """
+        Remove a specific completed task from the task list
+        """
+        # Check if the task is completed and remove it from the list
+        if location in self.team_dig_tasks and self.team_dig_tasks[location]['completed']:
+            del self.team_dig_tasks[location]
+            self.current_task = None # Reset current task if it was the completed one
+            return True  # Task removed successfully
+    
+    def remove_completed_tasks(self):
+        """
+        Remove any and all completed tasks from the task list
+        """
+        completed_tasks = [location for location, task in self.team_dig_tasks.items() if task['completed']]
+        for location in completed_tasks:
+            del self.team_dig_tasks[location]
+
+        # Reset current_task if it was one of the removed tasks
+        if self.current_task in completed_tasks:
+            self.current_task = None
+            
+        # Implement task coordination logic (eg. “meet at (x, y)”)
     # Handle multi-agent decisions based on messages
+
     # Replan when a shared goal is completed
+    def replan_tasks(self):
+        """
+        Replan tasks after a shared goal is completed
+        """
+        
+        self.remove_completed_task

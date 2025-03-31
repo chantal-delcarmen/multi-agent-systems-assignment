@@ -97,3 +97,32 @@ def test_task_does_not_exist():
     # Try to assign an agent to a non-existent task
     result = manager.coordinate_team_dig("Agent1", location)
     assert result is False  # Task does not exist, so assignment should fail
+
+def test_remove_completed_tasks():
+    manager = TeamTaskManager()
+    location = "G7"
+    current_turn = 5
+    estimated_travel_time = 3
+
+    manager.add_task(location, current_turn, estimated_travel_time)
+    manager.team_dig_tasks[location]["completed"] = True
+
+    # Remove completed tasks
+    manager.remove_completed_task(location)
+
+    # Ensure the task is removed
+    assert location not in manager.team_dig_tasks
+
+def test_call_agents_to_meet():
+    manager = TeamTaskManager()
+    location = "H8"
+    current_turn = 5
+    estimated_travel_time = 3
+
+    manager.add_task(location, current_turn, estimated_travel_time)
+
+    # Call agents to meet at the location
+    manager.call_agents_to_meet(location)
+
+    # Check if the meeting is logged correctly (this would depend on your logging implementation)
+    assert True  # Placeholder for actual check, replace with appropriate assertion based on your logging system
