@@ -50,3 +50,11 @@ class TeamTaskManager:
                 ),
                 'dig_count': 0                  # Counter for # of digs completed
             }
+    
+    def detect_team_dig_rubble(self, location):
+        """
+        Detect if a team dig task is needed at the given location.
+        """
+        if location in self.team_dig_tasks:
+            return True
+        return False
