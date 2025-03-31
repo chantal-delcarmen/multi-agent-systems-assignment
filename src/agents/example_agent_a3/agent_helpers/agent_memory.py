@@ -22,13 +22,31 @@ class AgentMemory:
         self.turn_counter = 0
 
     def set_turn_counter(self, turn_counter):
+        """"
+        Set the turn counter for the agent.
+        :param turn_counter: The current turn number
+        """
         self.turn_counter = turn_counter
     
     def get_turn_counter(self):
+        """
+        Get the current turn counter for the agent."
+        :return: The current turn number
+        """
         return self.turn_counter
 
     def update_location(self, x, y):
-        pass
+        """
+        Update the agent's location."
+        :param x: x-coordinate of the agent's new location
+        :param y: y-coordinate of the agent's new location
+        """
+        self.location = (x, y)
 
     def receive_message(self, message):
-        pass
+        """
+        Store a received message in the agent's memory."
+        :param message: The message to be stored
+        """
+        self.messages_received.append(message)
+
