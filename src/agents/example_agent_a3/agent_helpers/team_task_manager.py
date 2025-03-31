@@ -42,18 +42,19 @@ class TeamTaskManager:
         Add a new team dig task to the manager.
         """
 
-        buffer_time = 2  # Buffer time to account for travel delays
+        buffer_time = 0     # Buffer time to account for travel delays in team coordination
+                            # Set to 0 for now, but can be adjusted based on simulation needs
 
-        # Check if the task already exists
+        # Check if location is valid, ie. task not already added to team dig task list
         if location not in self.team_dig_tasks:
             self.team_dig_tasks[location] = {
                 'assigned_agents': set(),       # Set of agents assigned to the task
                 'required_agents': 2,           # Number of agents required for TEAM_DIG
                 'completed': False,             # Flag to check if task is completed
+                'dig_count': 0,                 # Counter for # of digs completed
                 'planned_turn': (               # Turn when the task is planned to be executed
                     current_turn + estimated_travel_time + buffer_time
                 ),
-                'dig_count': 0                  # Counter for # of digs completed
             }
     
     # Check if TEAM_DIG is needed at the location
@@ -126,7 +127,13 @@ class TeamTaskManager:
                 for agent_id in task['assigned_agents']:
                     notification = f"Notify {agent_id} to meet at {location} for TEAM_DIG."
                     notifications.append(notification)
+
+                    # TODO: once communication manager is implemented, 
+                    # send the notification to the agent via messaging system
+                    # Example: self.communication_manager.send_message(agent_id, notification)
+                    # Also update test cases to check for this behavior
                     print(notification)  # Keep the print for runtime behavior
+
         return notifications
 
     def remove_completed_task(self, location):
@@ -150,9 +157,6 @@ class TeamTaskManager:
         # Reset current_task if it was one of the removed tasks
         if self.current_task in completed_tasks:
             self.current_task = None
-            
-        # Implement task coordination logic (eg. “meet at (x, y)”)
-    # Handle multi-agent decisions based on messages
 
     # Replan when a shared goal is completed
     def replan_tasks(self):
@@ -160,4 +164,18 @@ class TeamTaskManager:
         Replan tasks after a shared goal is completed
         """
         
-        self.remove_completed_task
+        self.remove_completed_tasks()  # Clear any completed tasks from the list
+
+        for location, task in self.team_dig_tasks.items():
+            if task['completed'] == False: # Task incomplete
+        
+        #TODO: finish this function 
+
+
+
+
+           
+
+
+    # TODO: Handle multi-agent decisions based on messages
+    # Wait for teammate to implement message functions in communication_manager.py
