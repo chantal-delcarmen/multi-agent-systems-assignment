@@ -11,9 +11,6 @@ Mar 30, 2025
 
 """
 
-import re
-
-
 class CommunicationManager:
     def __init__(self, memory):
         self.memory = memory
@@ -24,7 +21,7 @@ class CommunicationManager:
         :param location: (x, y) coordinates of the discovered task as a tuple
         :return: A formatted string message, eg. "FOUND (x, y)"
         """
-        return f"FOUND {location[0]} {location[1]}" # returning the x and y coordinates of the found agents
+        return f"FOUND {location}"
 
     def generate_done_message(self, location):
         """
@@ -32,7 +29,7 @@ class CommunicationManager:
         :param location: (x, y) coordinates of the completed task as a tuple
         :return: formatted string message, eg. "DONE (x, y)"
         """
-        return f"DONE {location[0]} {location[1]}"
+        return f"DONE {location}"
 
     def generate_assignment_message(self, agent_id, location):
         """
@@ -41,33 +38,13 @@ class CommunicationManager:
         :param location: (x, y) coordinates of the task as a tuple
         :return: A formatted string message, eg. "ASSIGN agent_id (x, y)"
         """
-        return f"ASSIGN {agent_id} {location[0]} {location[1]}"
+        return f"ASSIGN {agent_id} {location}"
 
-    def parse_messages(self, messages):
+
+    def parse_messages(self):
         """
         Parse incoming messages and update memory or task manager
         :param messages: A list of incoming message strings
         :return: A list of parsed message dictionaries
         """
-        parsed_messages = []
-        for i in messages:
-            # Check if the message is in the expected format
-            found_match = re.match(r"FOUND (\d+) (\d+)", i) #  x and y coordinates of the found agents
-            done_match = re.match(r"DONE (\d+) (\d+)", i) # x and y coordinates of the completed task
-            assign_match = re.match(r"ASSIGN (\d+) (\d+) (\d+)", i) # agent_id, x and y coordinates of the task
-            if found_match:
-                x, y = map(int, found_match.groups()) # x and y coordinates of the found agents
-                parsed_messages.append({"type": "FOUND", "location": (x, y)})
-            elif done_match:
-                x, y = map(int, done_match.groups())
-                parsed_messages.append({"type": "DONE", "location": (x, y)})
-            elif assign_match:
-                agent_id, x, y = map(int, assign_match.groups())
-                parsed_messages.append({"type": "ASSIGN", "agent_id": agent_id, "location": (x, y)})
-            else:
-                print(f"Unknown message format: {i}")
-                # Handle unknown message format
-
-        return parsed_messages
-
-        #pass
+        pass

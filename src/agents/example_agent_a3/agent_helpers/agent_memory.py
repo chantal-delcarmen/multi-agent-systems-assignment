@@ -31,5 +31,4 @@ class AgentMemory:
         pass
 
     def receive_message(self, message):
-        self.messages_received.append(message)
         pass
