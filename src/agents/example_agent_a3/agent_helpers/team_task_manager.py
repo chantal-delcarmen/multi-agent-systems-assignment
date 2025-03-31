@@ -14,6 +14,11 @@ Responsibilities:
 - Update and remove completed tasks
 - Support replanning once a shared task is complete
 
+Communicates with:
+- agent_helpers/communication_manager.py (message formatting and parsing)
+- agent_helpers/agent_memory.py (stores agent state and messages)
+- example_agent.py (coordinating actions based on parsed messages)
+
 This module is used by example_agent.py to support cooperative behavior in the AEGIS simulation.
 
 Authors: 
@@ -28,7 +33,7 @@ Mar 30, 2025
 class TeamTaskManager:
     def __init__(self):
         # Initialize dictionary to store team dig tasks
-        # Task Format: 
+        # Task Format: {location: {assigned_agents, required_agents, completed, planned_turn, dig_count}}
         self.team_dig_tasks = {}
         self.current_task = None
 
@@ -51,10 +56,21 @@ class TeamTaskManager:
                 'dig_count': 0                  # Counter for # of digs completed
             }
     
-    def detect_team_dig_rubble(self, location):
+    # Check if TEAM_DIG is needed at the location
+    def is_team_dig_needed(self, location):
         """
-        Detect if a team dig task is needed at the given location.
+        Check if a team dig task is needed at the given location
         """
+        # Check if the location is in the task list
         if location in self.team_dig_tasks:
-            return True
+            # Check if the task is not completed
+            task = self.team_dig_tasks[location]
+            return task['completed'] == False
+        # If location is not in team_dig_tasks list, return False (TEAM_DIG not needed)
         return False
+    
+
+    
+    # Implement task coordination logic (eg. “meet at (x, y)”)
+    # Handle multi-agent decisions based on messages
+    # Replan when a shared goal is completed
