@@ -30,7 +30,7 @@ from .agent_helpers.energy_manager import EnergyManager
 from .agent_helpers.astar_pathfinder import AStarPathfinder
 from .agent_helpers.goal_planner import GoalPlanner
 from .agent_helpers.leader_coordinator import LeaderCoordinator
-
+from .agent_helpers.communication_manager import CommunicationManager
 """
 Class ExampleAgent:
 This class is responsible for implementing the agent's logic
@@ -64,7 +64,32 @@ class ExampleAgent(Brain):
     def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
         self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")
         self._agent.log(f"{smr}")
-        print("#--- You need to implement handle_send_message_result function! ---#")
+        message = smr.get_message()
+        self._agent.log(f"Message: {message}")
+
+        parsed_message = CommunicationManager.parse_messages([message])
+        self._agent.log(f"Parsed message: {parsed_message}")
+        # Iterate through the parsed messages and update memory or task manager
+        for i in parsed_message:
+            if i['type'] == "FOUND":
+                # x and y coordinates of the found agents
+                x, y = i['location']
+                self._agent.log(f"FOUND: {x}, {y}")
+                self.memory.add_found_location(x, y)
+            elif i['type'] == "DONE":
+                # x and y coordinates of the completed task
+                x, y = i['location']
+                self._agent.log(f"DONE: {x}, {y}")
+                self.memory.add_done_location(x, y)
+            elif i['type'] == "ASSIGN":
+                # agent_id, x and y coordinates of the task
+                agent_id, (x, y) = i["agentID"], i['location']
+                self._agent.log(f"ASSIGN: {agent_id}, to, {x}, {y}")
+                self.memory.add_assignment(agent_id, x, y)
+            else:
+                self._agent.log(f"Unknown message type: {i['type']}")
+                self._agent.log(f"Message: {message}")
+        #print("#--- You need to implement handle_send_message_result function! ---#")
 
     # Handle the result of observing the world
     @override
