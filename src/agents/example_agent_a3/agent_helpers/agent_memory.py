@@ -16,10 +16,11 @@ class AgentMemory:
         self.agent_id = agent_id
         self.location = None
         self.energy = 100
-        self.task = None
-        self.known_survivors = set()
-        self.messages_received = []
-        self.turn_counter = 0
+        self.task = None                # Assigned task (if any)
+        self.turn_counter = 0           # Number of turns since the agent was created
+        self.known_survivors = set()    # Create empty set for known survivors
+        self.messages_received = []     # List to store received messages
+
 
     def set_turn_counter(self, turn_counter):
         """"
@@ -43,10 +44,23 @@ class AgentMemory:
         """
         self.location = (x, y)
 
+    def get_location(self):
+        """
+        Get the agent's current location."
+        :return: The agent's current location as a tuple (x, y)
+        """
+        return self.location
+
     def receive_message(self, message):
         """
         Store a received message in the agent's memory."
         :param message: The message to be stored
         """
         self.messages_received.append(message)
+
+    # Agent energy setter and getter
+
+    # Assigned task setter and getter
+
+
 

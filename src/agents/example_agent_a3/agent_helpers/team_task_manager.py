@@ -84,6 +84,9 @@ class TeamTaskManager:
         """
         Coordinate agents to dig at the same time at the specified location
         """
+        # Check if the location is in the task list
+        # Format of task: {location: {assigned_agents, required_agents, completed, planned_turn}}
+        # Format of team_dig_tasks: {location: {assigned_agents, required_agents, completed, planned_turn}}
         if location in self.team_dig_tasks:
             task = self.team_dig_tasks[location]
 
