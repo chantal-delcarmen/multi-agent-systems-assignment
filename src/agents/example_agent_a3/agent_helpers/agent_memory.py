@@ -31,4 +31,10 @@ class AgentMemory:
         pass
 
     def receive_message(self, message):
-        pass
+        self.messages_received.append(message)
+        #pass
+
+
+    def get_messages(self):
+        """ Retrieve all received messages. """
+        return self.messages_received

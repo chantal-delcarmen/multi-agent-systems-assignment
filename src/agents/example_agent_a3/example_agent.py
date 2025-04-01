@@ -59,6 +59,7 @@ class ExampleAgent(Brain):
     # TODO: connect helper classes to this one 
     
     # Handle the result of sending a message
+    # todo:zainab
     @override
     def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
         self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")

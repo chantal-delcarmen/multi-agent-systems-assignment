@@ -72,5 +72,6 @@ class CommunicationManager:
             else:
                 print(f"Unknown message format: {i}")
                 # Handle unknown message format
+        self.agent_memory.messages_received.clear()
 
         # pass
