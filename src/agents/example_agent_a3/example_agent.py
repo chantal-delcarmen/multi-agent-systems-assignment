@@ -71,15 +71,21 @@ class ExampleAgent(Brain):
     @override
     def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
         # Debug print
-        self._agent.log(f"Agent ID: {self.memory.get}")
+        self._agent.log(f"Agent ID: {self.memory.get_agent_id()}")
+
         # Log the raw SEND_MESSAGE_RESULT object for debugging
         self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")
+        self._agent.log(f"Raw message from SEND_MESSAGE_RESULT: {smr.msg}")
 
         # Use the CommunicationManager to parse the message
         parsed_messages = self.comms.parse_messages([smr.msg])  # Assuming `smr.msg` contains the message
 
         # Log the parsed messages for debugging
         self._agent.log(f"Parsed messages: {parsed_messages}")
+
+        if parsed_messages is None:
+            self._agent.log("Parsed messages are None. Skipping iteration.")
+            return
 
         # Iterate through the parsed messages and handle them based on their type
         for message in parsed_messages:

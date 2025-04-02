@@ -61,6 +61,13 @@ class AgentMemory:
     def get_messages(self):
         """ Retrieve all received messages. """
         return self.messages_received
+    
+    def get_agent_id(self):
+        """
+        Get the agent's ID."
+        :return: The agent's ID
+        """
+        return self.agent_id
 
     # Agent energy setter and getter
 
