@@ -22,7 +22,23 @@ class LeaderCoordinator:
         return self.is_leader
 
     def assign_agents_to_goals(self, agents, survivor_cells):
-        pass  # to be implemented
+        parsed_messages = []
+        for agent in agents:
+            if agent.get_agent_id().id == 0: # Skip the leader
+                continue
+            if not survivor_cells:
+                break # No more survivors to assign
+            survivor = survivor_cells.pop()
+            self.assignments[agent.get_agent_id().id] = survivor
+            self.survivors_remaining.add(survivor)
+            self.agent.send_message(agent.get_agent_id(), self.generate_assignment_message(agent.get_agent_id().id, survivor))  # need to replace these methods with something esle. its a placeholder for now
+        self.agent.log(f"Assignments made: {self.assignments}")
+        parsed_messages.append({
+            "type": "ASSIGN",
+            "agentID": agent.get_agent_id().id,
+            "location": survivor
+        })
+        return parsed_messages
 
     def mark_survivor_saved(self, location):
         pass  # to be implemented

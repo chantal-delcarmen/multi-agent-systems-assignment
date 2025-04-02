@@ -64,7 +64,7 @@ class ExampleAgent(Brain):
     def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
         self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")
         self._agent.log(f"{smr}")
-        message = smr.get_message()
+        message = smr.msg
         self._agent.log(f"Message: {message}")
 
         parsed_message = CommunicationManager.parse_messages([message])
