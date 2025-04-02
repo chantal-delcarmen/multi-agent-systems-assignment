@@ -24,7 +24,7 @@ class CommunicationManager:
         :param location: (x, y) coordinates of the discovered task as a tuple
         :return: A formatted string message, eg. "FOUND (x, y)"
         """
-        return f"FOUND {location[0]} {location[1]}" # returning the x and y coordinates of the found agents
+        return f"FOUND {location[0]} {location[1]}"  # returning the x and y coordinates of the found agents
 
     def generate_done_message(self, location):
         """
@@ -52,22 +52,26 @@ class CommunicationManager:
         parsed_messages = []
         for i in messages:
             # Check if the message is in the expected format
-            found_match = re.match(r"FOUND (\d+) (\d+)", i) #  x and y coordinates of the found agents
-            done_match = re.match(r"DONE (\d+) (\d+)", i) # x and y coordinates of the completed task
-            assign_match = re.match(r"ASSIGN (\d+) (\d+) (\d+)", i) # agent_id, x and y coordinates of the task
+            # x and y coordinates of the found agents
+            found_match = re.match(r"FOUND (\d+) (\d+)", i)
+            # x and y coordinates of the completed task
+            done_match = re.match(r"DONE (\d+) (\d+)", i)
+            # agent_id, x and y coordinates of the task
+            assign_match = re.match(r"ASSIGN (\d+) (\d+) (\d+)", i)
             if found_match:
-                x, y = map(int, found_match.groups()) # x and y coordinates of the found agents
+                # x and y coordinates of the found agents
+                x, y = map(int, found_match.groups())
                 parsed_messages.append({"type": "FOUND", "location": (x, y)})
             elif done_match:
                 x, y = map(int, done_match.groups())
                 parsed_messages.append({"type": "DONE", "location": (x, y)})
             elif assign_match:
                 agent_id, x, y = map(int, assign_match.groups())
-                parsed_messages.append({"type": "ASSIGN", "agent_id": agent_id, "location": (x, y)})
+                parsed_messages.append(
+                    {"type": "ASSIGN", "agent_id": agent_id, "location": (x, y)})
             else:
                 print(f"Unknown message format: {i}")
                 # Handle unknown message format
+        self.agent_memory.messages_received.clear()
 
-        return parsed_messages
 
-        #pass

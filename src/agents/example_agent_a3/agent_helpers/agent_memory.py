@@ -58,6 +58,10 @@ class AgentMemory:
         """
         self.messages_received.append(message)
 
+    def get_messages(self):
+        """ Retrieve all received messages. """
+        return self.messages_received
+
     # Agent energy setter and getter
 
     # Assigned task setter and getter
