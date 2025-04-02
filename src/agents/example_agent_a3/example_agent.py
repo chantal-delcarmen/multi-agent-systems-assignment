@@ -146,8 +146,8 @@ class ExampleAgent(Brain):
         """Send a command and end your turn."""
         self._agent.log(f"SENDING {command}")
         self._agent.send(command)
-        self.turn_counter += 1   # Increment the turn number
-        AgentMemory.set_turn_counter(self.turn_counter) # Update the turn number in memory
+        self.turn_counter += 1   # Increment the agent's turn number
+        self.memory.set_turn_counter(self.turn_counter) # Update the agent's turn number in memory
         self._agent.send(END_TURN())
 
     # Find survivor (goal cell) in the world
