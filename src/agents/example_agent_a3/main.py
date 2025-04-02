@@ -20,9 +20,40 @@
 The following code is a test script for the TeamTaskManager class.
 Commented out code above is original agent code that is not needed for this test.
 """
+
+# To test the code in isolation from this file main.py, 
+# run the following command (change to your specific path) in the terminal:
+# cd C:\yourpathto\aegis-v3.0.1-a3-tauri\aegis\src\agents\example_agent_a3
+# python main.py
+
+import os 
+import sys
+
+# Add the `src` directory to the Python module search path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+
+from unittest.mock import MagicMock
 from agent_helpers.team_task_manager import TeamTaskManager
 
 def main():
+
+    # # Mock the AgentController and its get_agent_id method
+    # mock_agent_controller = MagicMock()
+    # mock_agent_id = MagicMock()
+    # mock_agent_id.id = "test_agent_id"  # Mock the ID of the agent
+    # mock_agent_controller.get_agent_id.return_value = mock_agent_id
+
+    # # Mock the BaseAgent.get_agent() to return the mocked agent controller
+    # ExampleAgent._agent = mock_agent_controller
+
+    # # Initialize the ExampleAgent
+    # agent = ExampleAgent()
+
+    # # Print the agent's ID
+    # print("Agent ID:", agent._agent.get_agent_id().id)
+    # print()
+
+    # # Test TeamTaskManager -------------------------------------
     manager = TeamTaskManager()
     location = "A1"
     current_turn = 5
