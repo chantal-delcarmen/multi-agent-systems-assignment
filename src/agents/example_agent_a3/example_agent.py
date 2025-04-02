@@ -60,36 +60,49 @@ class ExampleAgent(Brain):
     
     # Handle the result of sending a message
     # todo:zainab
+
+    # Original start code for handle_send_message_result
+    # @override
+    # def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
+    #     self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")
+    #     self._agent.log(f"{smr}")
+    #     print("#--- You need to implement handle_send_message_result function! ---#")
+
     @override
     def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
+        # Debug print
+        self._agent.log(f"Agent ID: {self.memory.get}")
+        # Log the raw SEND_MESSAGE_RESULT object for debugging
         self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")
-        self._agent.log(f"{smr}")
-        message = smr.get_message()
-        self._agent.log(f"Message: {message}")
 
-        parsed_message = CommunicationManager.parse_messages([message])
-        self._agent.log(f"Parsed message: {parsed_message}")
-        # Iterate through the parsed messages and update memory or task manager
-        for i in parsed_message:
-            if i['type'] == "FOUND":
-                # x and y coordinates of the found agents
-                x, y = i['location']
-                self._agent.log(f"FOUND: {x}, {y}")
+        # Use the CommunicationManager to parse the message
+        parsed_messages = self.comms.parse_messages([smr.msg])  # Assuming `smr.msg` contains the message
+
+        # Log the parsed messages for debugging
+        self._agent.log(f"Parsed messages: {parsed_messages}")
+
+        # Iterate through the parsed messages and handle them based on their type
+        for message in parsed_messages:
+            message_type = message.get("type")
+            if message_type == "FOUND":
+                # Handle a "FOUND" message (e.g., a location of interest was found)
+                x, y = message["location"]
+                self._agent.log(f"FOUND message received: Location ({x}, {y})")
                 self.memory.add_found_location(x, y)
-            elif i['type'] == "DONE":
-                # x and y coordinates of the completed task
-                x, y = i['location']
-                self._agent.log(f"DONE: {x}, {y}")
+            elif message_type == "DONE":
+                # Handle a "DONE" message (e.g., a task was completed)
+                x, y = message["location"]
+                self._agent.log(f"DONE message received: Location ({x}, {y})")
                 self.memory.add_done_location(x, y)
-            elif i['type'] == "ASSIGN":
-                # agent_id, x and y coordinates of the task
-                agent_id, (x, y) = i["agentID"], i['location']
-                self._agent.log(f"ASSIGN: {agent_id}, to, {x}, {y}")
+            elif message_type == "ASSIGN":
+                # Handle an "ASSIGN" message (e.g., a task was assigned to an agent)
+                agent_id = message["agentID"]
+                x, y = message["location"]
+                self._agent.log(f"ASSIGN message received: Agent {agent_id} assigned to ({x}, {y})")
                 self.memory.add_assignment(agent_id, x, y)
             else:
-                self._agent.log(f"Unknown message type: {i['type']}")
-                self._agent.log(f"Message: {message}")
-        #print("#--- You need to implement handle_send_message_result function! ---#")
+                # Handle unknown message types
+                self._agent.log(f"Unknown message type: {message_type}")
 
     # Handle the result of observing the world
     @override
