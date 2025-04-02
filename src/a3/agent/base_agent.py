@@ -71,6 +71,8 @@ class BaseAgent:
 
             cell.move_cost = cell_info.move_cost
             cell.set_top_layer(cell_info.top_layer)
+            if cell_info.top_layer is None and cell.has_survivors:
+                cell.has_survivors = False
 
     def set_agent_state(self, agent_state: AgentStates) -> None:
         self._agent_state = agent_state
