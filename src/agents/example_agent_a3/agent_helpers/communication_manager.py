@@ -45,34 +45,41 @@ class CommunicationManager:
 
     def parse_messages(self, messages):
         """
-        Parse incoming messages and update memory or task manager
+        Parse incoming messages and update memory or task manager.
         :param messages: A list of incoming message strings
         :return: A list of parsed message dictionaries
         """
+        if not messages or not isinstance(messages, list):
+            print("Error: Invalid or empty messages list.")
+            return []
+
         parsed_messages = []
         for i in messages:
-            # Check if the message is in the expected format
-            # x and y coordinates of the found agents
+            if not isinstance(i, str):
+                print(f"Error: Invalid message format (not a string): {i}")
+                continue
+
+            # Check if the message matches the expected formats
             found_match = re.match(r"FOUND (\d+) (\d+)", i)
-            # x and y coordinates of the completed task
             done_match = re.match(r"DONE (\d+) (\d+)", i)
-            # agent_id, x and y coordinates of the task
             assign_match = re.match(r"ASSIGN (\d+) (\d+) (\d+)", i)
+
             if found_match:
-                # x and y coordinates of the found agents
+                # Parse "FOUND" message
                 x, y = map(int, found_match.groups())
                 parsed_messages.append({"type": "FOUND", "location": (x, y)})
             elif done_match:
+                # Parse "DONE" message
                 x, y = map(int, done_match.groups())
                 parsed_messages.append({"type": "DONE", "location": (x, y)})
             elif assign_match:
+                # Parse "ASSIGN" message
                 agent_id, x, y = map(int, assign_match.groups())
-                parsed_messages.append(
-                    {"type": "ASSIGN", "agent_id": agent_id, "location": (x, y)})
+                parsed_messages.append({"type": "ASSIGN", "agent_id": agent_id, "location": (x, y)})
             else:
-                print(f"Unknown message format: {i}")
                 # Handle unknown message format
-                
-        # self.agent_memory.messages_received.clear()
+                print(f"Warning: Unknown message format: {i}")
+
+        return parsed_messages
 
 

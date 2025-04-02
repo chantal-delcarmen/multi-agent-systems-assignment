@@ -47,7 +47,7 @@ class ExampleAgent(Brain):
     def __init__(self) -> None:
         super().__init__()
         self._agent: AgentController = BaseAgent.get_agent()
-        self.memory = AgentMemory(self._agent.get_agent_id().id)
+        self.memory = AgentMemory(self._agent)
         self.comms = CommunicationManager(self.memory)
         self.energy_manager = EnergyManager(self.memory)
         self.goal_planner = GoalPlanner(self._agent)
@@ -61,30 +61,21 @@ class ExampleAgent(Brain):
     # Handle the result of sending a message
     # todo:zainab
 
-    # Original start code for handle_send_message_result
-    # @override
-    # def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
-    #     self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")
-    #     self._agent.log(f"{smr}")
-    #     print("#--- You need to implement handle_send_message_result function! ---#")
-
     @override
     def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
-        # Debug print
-        self._agent.log(f"Agent ID: {self.memory.get_agent_id()}")
-
         # Log the raw SEND_MESSAGE_RESULT object for debugging
         self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")
         self._agent.log(f"Raw message from SEND_MESSAGE_RESULT: {smr.msg}")
 
-        # Use the CommunicationManager to parse the message
-        parsed_messages = self.comms.parse_messages([smr.msg])  # Assuming `smr.msg` contains the message
+        # Check if the message is valid
+        if not smr.msg:
+            self._agent.log("SEND_MESSAGE_RESULT contains no message. Skipping.")
+            return
 
-        # Log the parsed messages for debugging
-        self._agent.log(f"Parsed messages: {parsed_messages}")
-
-        if parsed_messages is None:
-            self._agent.log("Parsed messages are None. Skipping iteration.")
+        # Parse the message using the CommunicationManager
+        parsed_messages = self.comms.parse_messages([smr.msg])
+        if not parsed_messages:
+            self._agent.log("Parsed messages are empty or invalid. Skipping.")
             return
 
         # Iterate through the parsed messages and handle them based on their type
@@ -102,7 +93,7 @@ class ExampleAgent(Brain):
                 self.memory.add_done_location(x, y)
             elif message_type == "ASSIGN":
                 # Handle an "ASSIGN" message (e.g., a task was assigned to an agent)
-                agent_id = message["agentID"]
+                agent_id = message["agent_id"]
                 x, y = message["location"]
                 self._agent.log(f"ASSIGN message received: Agent {agent_id} assigned to ({x}, {y})")
                 self.memory.add_assignment(agent_id, x, y)
@@ -134,14 +125,6 @@ class ExampleAgent(Brain):
     @override
     def think(self) -> None:
         self._agent.log("Thinking")
-
-        # Send a message to other agents in my group.
-        # Empty AgentIDList will send to group members.
-        self._agent.send(
-            SEND_MESSAGE(
-                AgentIDList(), f"Hello from agent {self._agent.get_agent_id().id}"
-            )
-        )
 
         # Retrieve the current state of the world.
         world = self.get_world()
