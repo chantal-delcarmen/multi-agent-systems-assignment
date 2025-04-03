@@ -31,11 +31,19 @@ Mar 30, 2025
 """
 
 class TeamTaskManager:
-    def __init__(self):
+    def __init__(self, leader_coordinator):
         # Initialize dictionary to store team dig tasks
         # Task Format: {location: {assigned_agents, required_agents, completed, planned_turn, dig_count}}
         self.team_dig_tasks = {}
         self.current_task = None
+        self.leader_coordinator = leader_coordinator
+
+    def notify_task_completed(self, location):
+        """
+        Notify the LeaderCoordinator that a task has been completed.
+        """
+        # TODO: Implement function in leader_coordinator.py to handle task completion
+        # self.leader_coordinator.task_completed(location) 
 
     def add_task(self, location, current_turn, estimated_travel_time):
         """
