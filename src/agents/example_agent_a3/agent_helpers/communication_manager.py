@@ -11,8 +11,18 @@ Mar 30, 2025
 
 """
 
+import sys
+import os
 import re
 
+# Add the `src` directory to the Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+src_dir = os.path.abspath(os.path.join(current_dir, "../../../"))
+if src_dir not in sys.path:
+    sys.path.append(src_dir)
+
+from aegis.common.commands.agent_commands.SEND_MESSAGE import SEND_MESSAGE
+from aegis.common.agent_id_list import AgentIDList
 
 class CommunicationManager:
     def __init__(self, memory):
@@ -104,8 +114,16 @@ class CommunicationManager:
             agent_id = message["agent_id"]
             x, y = message["location"]
             agent.log(f"ASSIGN message received: Agent {agent_id} assigned to ({x}, {y})")
-            self.memory.add_assignment(agent_id, x, y)
+            self.memory.set_current_task(agent_id, x, y)
         else:
             # Handle unknown message types
             agent.log(f"Unknown message type: {message_type}")
 
+    def send_message_to_all(self, message):
+        """
+        Send a message to all agents.
+        :param message: The message to send.
+        """
+        recipient_list = AgentIDList()  # Empty list means broadcast to all
+        self.agent.send(SEND_MESSAGE(recipient_list, message))
+        self.agent.log(f"Message sent to all agents: {message}")

@@ -100,12 +100,13 @@ class AgentMemory:
         """
         return self.completed_tasks
 
-    def set_current_task(self, x, y):
+    def set_current_task(self, agent_id, x, y):
         """
         Set the current task for the agent and add it to assignments.
         :param x: x-coordinate of the task's location
         :param y: y-coordinate of the task's location
         """
+        self.agent_id = agent_id
         self.current_task = (x, y)
         self.add_assignment(self.agent_id, x, y)
 
@@ -137,3 +138,21 @@ class AgentMemory:
         :return: A dictionary of assignments (agent_id -> location)
         """
         return self.assignments
+    
+    def mark_cell_as_observed(self, current_location):
+        """
+        Mark the cell as observed by adding it to the known survivors set.
+        :param current_location: The location of the cell to be marked as observed
+        """
+        print(f"Agent {self.agent_id} marked cell {current_location} as observed.")
+        self.known_survivors.add(current_location)
+        
+    def is_cell_observed(self, current_location):
+        """
+        Check if the cell has been observed by the agent.
+        :param current_location: The location of the cell to be checked
+        :return: True if the cell has been observed, False otherwise
+        """
+        ans = current_location in self.known_survivors
+        print(f"Agent {self.agent_id} checked cell {current_location}: {'observed' if ans else 'not observed'}")
+        return ans
