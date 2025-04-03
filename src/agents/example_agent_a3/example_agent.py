@@ -30,21 +30,29 @@ from .agent_helpers.energy_manager import EnergyManager
 from .agent_helpers.astar_pathfinder import AStarPathfinder
 from .agent_helpers.goal_planner import GoalPlanner
 from .agent_helpers.leader_coordinator import LeaderCoordinator
-
-
-""" 
+from .agent_helpers.communication_manager import CommunicationManager
+"""
 Class ExampleAgent:
 This class is responsible for implementing the agent's logic
+
+Authors: 
+Chantal del Carmen, Zainab Majid, Mohammad Akif Hasan, Vincent Iyegbuye
+
+Course: CPSC 383 - Winter 2025 | T05
+Assignment 3 - Multi-Agent Systems
+Mar 30, 2025
+
 """
 class ExampleAgent(Brain):
     def __init__(self) -> None:
         super().__init__()
         self._agent: AgentController = BaseAgent.get_agent()
-        self.memory = AgentMemory(self._agent.get_agent_id().id)
+        self.memory = AgentMemory(self._agent)
         self.comms = CommunicationManager(self.memory)
         self.energy_manager = EnergyManager(self.memory)
         self.goal_planner = GoalPlanner(self._agent)
         self.leader = LeaderCoordinator(self._agent)
+        self.turn_counter = 0   # Keep track of number of turns
 
     # Handle functions:
     # You need to implement these functions
@@ -53,9 +61,24 @@ class ExampleAgent(Brain):
     # Handle the result of sending a message
     @override
     def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
-        self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")
-        self._agent.log(f"{smr}")
-        print("#--- You need to implement handle_send_message_result function! ---#")
+        # # Log the raw SEND_MESSAGE_RESULT object for debugging
+        # self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")
+        # self._agent.log(f"Raw message from SEND_MESSAGE_RESULT: {smr.msg}")
+
+        # Check if the message is valid
+        if not smr.msg:
+            self._agent.log("SEND_MESSAGE_RESULT contains no message. Skipping.")
+            return
+
+        # Parse the message using the CommunicationManager
+        parsed_messages = self.comms.parse_messages([smr.msg])
+        if not parsed_messages:
+            self._agent.log("Parsed messages are empty or invalid. Skipping.")
+            return
+
+        # Delegate handling of parsed messages to the CommunicationManager
+        for message in parsed_messages:
+            self.comms.handle_parsed_message(message, self._agent)
 
     # Handle the result of observing the world
     @override
@@ -82,13 +105,8 @@ class ExampleAgent(Brain):
     def think(self) -> None:
         self._agent.log("Thinking")
 
-        # Send a message to other agents in my group.
-        # Empty AgentIDList will send to group members.
-        self._agent.send(
-            SEND_MESSAGE(
-                AgentIDList(), f"Hello from agent {self._agent.get_agent_id().id}"
-            )
-        )
+        # Testing debug
+        self._agent.send(SEND_MESSAGE(AgentIDList(), "FOUND 3 4"))
 
         # Retrieve the current state of the world.
         world = self.get_world()
@@ -138,6 +156,8 @@ class ExampleAgent(Brain):
         """Send a command and end your turn."""
         self._agent.log(f"SENDING {command}")
         self._agent.send(command)
+        self.turn_counter += 1   # Increment the agent's turn number
+        self.memory.set_turn_counter(self.turn_counter) # Update the agent's turn number in memory
         self._agent.send(END_TURN())
 
     # Find survivor (goal cell) in the world

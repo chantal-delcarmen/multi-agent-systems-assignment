@@ -1,5 +1,13 @@
 """
-EnergyManager: Handles energy tracking and decisions like when to SLEEP.
+Class EnergyManager: Handles energy tracking and decisions like when to SLEEP.
+
+Authors: 
+Chantal del Carmen, Zainab Majid, Mohammad Akif Hasan, Vincent Iyegbuye
+
+Course: CPSC 383 - Winter 2025 | T05
+Assignment 3 - Multi-Agent Systems
+Mar 30, 2025
+
 """
 
 class EnergyManager:
