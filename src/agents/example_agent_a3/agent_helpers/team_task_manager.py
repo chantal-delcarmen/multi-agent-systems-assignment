@@ -1,23 +1,23 @@
-
 """
 Class team_task_manager.py
 
 Description:
-This module manages coordination for multi-agent tasks that require teamwork,
-such as TEAM_DIG actions that need two agents to dig simultaneously at the same location.
+This module manages the execution and coordination of multi-agent tasks that require teamwork, 
+such as TEAM_DIG actions where multiple agents must dig simultaneously at the same location.
 
 Responsibilities:
-- Track locations where team dig is required
-- Assign agents to team dig tasks
-- Determine when enough agents have arrived to initiate TEAM_DIG
-- Coordinate the timing of synchronized actions
-- Update and remove completed tasks
-- Support replanning once a shared task is complete
+- Track and manage team dig tasks, including their status and assigned agents.
+- Assign agents to team dig tasks and ensure enough agents are present to initiate TEAM_DIG.
+- Coordinate the timing of synchronized actions for TEAM_DIG operations.
+- Notify agents to meet at specific locations for collaborative tasks.
+- Remove completed tasks from the task list and reset the current task.
+- Communicate task completion to the LeaderCoordinator for high-level replanning.
 
 Communicates with:
-- agent_helpers/communication_manager.py (message formatting and parsing)
-- agent_helpers/agent_memory.py (stores agent state and messages)
-- example_agent.py (coordinating actions based on parsed messages)
+- agent_helpers/communication_manager.py (for sending notifications to agents).
+- agent_helpers/agent_memory.py (for storing agent state and task-related information).
+- example_agent.py (for coordinating actions based on parsed messages).
+- leader_coordinator.py (for notifying task completion and enabling high-level task replanning).
 
 This module is used by example_agent.py to support cooperative behavior in the AEGIS simulation.
 
@@ -31,11 +31,19 @@ Mar 30, 2025
 """
 
 class TeamTaskManager:
-    def __init__(self):
+    def __init__(self, leader_coordinator):
         # Initialize dictionary to store team dig tasks
         # Task Format: {location: {assigned_agents, required_agents, completed, planned_turn, dig_count}}
         self.team_dig_tasks = {}
         self.current_task = None
+        self.leader_coordinator = leader_coordinator
+
+    def notify_task_completed(self, location):
+        """
+        Notify the LeaderCoordinator that a task has been completed.
+        """
+        # TODO: Implement function in leader_coordinator.py to handle task completion
+        # self.leader_coordinator.task_completed(location) 
 
     def add_task(self, location, current_turn, estimated_travel_time):
         """
@@ -161,22 +169,23 @@ class TeamTaskManager:
         if self.current_task in completed_tasks:
             self.current_task = None
 
-    # Replan when a shared goal is completed
-    def replan_tasks(self):
-        """
-        Replan tasks after a shared goal is completed
-        """
-        # Clear any completed tasks from the list
-        self.remove_completed_tasks()  
+    # Move replan tasks to leader_coordinator.py
+    # # Replan when a shared goal is completed
+    # def replan_tasks(self):
+    #     """
+    #     Replan tasks after a shared goal is completed
+    #     """
+    #     # Clear any completed tasks from the list
+    #     self.remove_completed_tasks()  
 
-        # Reassign agents to new tasks if needed
-        for location, task in self.team_dig_tasks.items():
-            if task['completed'] == False: # Task incomplete
-                if len(task['assigned_agents']) < task['required_agents']:
-                    # Notify agents to meet at the location
-                    self.call_agents_to_meet(location)
+    #     # Reassign agents to new tasks if needed
+    #     for location, task in self.team_dig_tasks.items():
+    #         if task['completed'] == False: # Task incomplete
+    #             if len(task['assigned_agents']) < task['required_agents']:
+    #                 # Notify agents to meet at the location
+    #                 self.call_agents_to_meet(location)
         
-        #TODO: finish this function 
+    #     #TODO: finish this function 
 
 
 
