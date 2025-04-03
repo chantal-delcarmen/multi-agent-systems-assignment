@@ -100,12 +100,13 @@ class AgentMemory:
         """
         return self.completed_tasks
 
-    def set_current_task(self, x, y):
+    def set_current_task(self, agent_id, x, y):
         """
         Set the current task for the agent and add it to assignments.
         :param x: x-coordinate of the task's location
         :param y: y-coordinate of the task's location
         """
+        self.agent_id = agent_id
         self.current_task = (x, y)
         self.add_assignment(self.agent_id, x, y)
 

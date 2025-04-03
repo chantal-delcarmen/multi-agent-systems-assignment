@@ -58,3 +58,11 @@ class LeaderCoordinator:
 
     def all_survivors_saved(self):
         pass  # to be implemented
+
+    def notify_task_completed(self, location):
+        """
+        Notify the leader that a task has been completed.
+        This method should be called by the agents when they finish their tasks.
+        """
+        pass
+        # Implementation to be added later
