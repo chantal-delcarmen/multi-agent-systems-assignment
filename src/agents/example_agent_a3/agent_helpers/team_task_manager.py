@@ -1,23 +1,23 @@
-
 """
 Class team_task_manager.py
 
 Description:
-This module manages coordination for multi-agent tasks that require teamwork,
-such as TEAM_DIG actions that need two agents to dig simultaneously at the same location.
+This module manages the execution and coordination of multi-agent tasks that require teamwork, 
+such as TEAM_DIG actions where multiple agents must dig simultaneously at the same location.
 
 Responsibilities:
-- Track locations where team dig is required
-- Assign agents to team dig tasks
-- Determine when enough agents have arrived to initiate TEAM_DIG
-- Coordinate the timing of synchronized actions
-- Update and remove completed tasks
-- Support replanning once a shared task is complete
+- Track and manage team dig tasks, including their status and assigned agents.
+- Assign agents to team dig tasks and ensure enough agents are present to initiate TEAM_DIG.
+- Coordinate the timing of synchronized actions for TEAM_DIG operations.
+- Notify agents to meet at specific locations for collaborative tasks.
+- Remove completed tasks from the task list and reset the current task.
+- Communicate task completion to the LeaderCoordinator for high-level replanning.
 
 Communicates with:
-- agent_helpers/communication_manager.py (message formatting and parsing)
-- agent_helpers/agent_memory.py (stores agent state and messages)
-- example_agent.py (coordinating actions based on parsed messages)
+- agent_helpers/communication_manager.py (for sending notifications to agents).
+- agent_helpers/agent_memory.py (for storing agent state and task-related information).
+- example_agent.py (for coordinating actions based on parsed messages).
+- leader_coordinator.py (for notifying task completion and enabling high-level task replanning).
 
 This module is used by example_agent.py to support cooperative behavior in the AEGIS simulation.
 
@@ -30,159 +30,131 @@ Mar 30, 2025
 
 """
 
+from .communication_manager import CommunicationManager
+
 class TeamTaskManager:
-    def __init__(self):
-        # Initialize dictionary to store team dig tasks
-        # Task Format: {location: {assigned_agents, required_agents, completed, planned_turn, dig_count}}
-        self.team_dig_tasks = {}
+    def __init__(self, leader_coordinator, comms):
+        """
+        Initialize the TeamTaskManager.
+
+        Args:
+            leader_coordinator: The LeaderCoordinator instance for high-level coordination.
+            comms: The CommunicationManager instance for sending and receiving messages.
+        """
+        self.team_dig_tasks = {}  # Task Format: {location: {assigned_agents, required_agents, completed, dig_count}}
         self.current_task = None
+        self.leader_coordinator = leader_coordinator
+        self.comms: CommunicationManager = comms  # CommunicationManager instance
 
-    def add_task(self, location, current_turn, estimated_travel_time):
+    def notify_task_completed(self, location):
         """
-        Add a new team dig task to the manager.
+        Notify the LeaderCoordinator and agents that a task has been completed.
         """
+        if location in self.team_dig_tasks:
+            # Notify the LeaderCoordinator
+            self.leader_coordinator.notify_task_completed(location)
 
-        buffer_time = 0     # Buffer time to account for travel delays in team coordination
-                            # Set to 0 for now, but can be adjusted based on simulation needs
+            # Notify agents via the messaging system
+            message = f"TASK_COMPLETED {location[0]} {location[1]}"
+            self.comms.send_message_to_all(message)
+            self.leader_coordinator.agent.log(f"Task at {location} marked as completed and agents notified.")
 
-        # Check if location is valid, ie. task not already added to team dig task list
+    def add_task(self, location, required_agents):
+        """
+        Add a new team dig task to the manager and notify agents.
+
+        Args:
+            location: The location of the task.
+            required_agents: The number of agents required for the task.
+        """
         if location not in self.team_dig_tasks:
             self.team_dig_tasks[location] = {
-                'assigned_agents': set(),       # Set of agents assigned to the task
-                'required_agents': 2,           # Number of agents required for TEAM_DIG
-                'completed': False,             # Flag to check if task is completed
-                'dig_count': 0,                 # Counter for # of digs completed
-                'planned_turn': (               # Turn when the task is planned to be executed
-                    current_turn + estimated_travel_time + buffer_time
-                ),
+                "assigned_agents": set(),
+                "required_agents": required_agents,
+                "completed": False,
+                "dig_count": 0,
             }
-    
-    # Check if TEAM_DIG is needed at the location
-    def is_team_dig_needed(self, location):
+            # Notify agents about the new task
+            self.notify_agents_about_task(location, required_agents)
+
+    def notify_agents_about_task(self, location, required_agents):
         """
-        Check if a team dig task is needed at the given location
+        Notify agents about a new task.
+
+        Args:
+            location: The location of the task.
+            required_agents: The number of agents required for the task.
         """
-        # Check if the location is in the task list
+        message = f"TASK {location[0]} {location[1]} {required_agents}"
+        self.comms.send_message_to_all(message)
+        self.leader_coordinator.agent.log(f"Notified agents about task at {location} requiring {required_agents} agents.")
+
+    def call_agents_to_meet(self, location):
+        """
+        Notify agents to meet at a specific location for a task.
+
+        Args:
+            location: The location where agents should meet.
+        """
+        message = f"MEET {location[0]} {location[1]}"
+        self.comms.send_message_to_all(message)
+        self.leader_coordinator.agent.log(f"Called agents to meet at {location}.")
+
+    def handle_task_message(self, message):
+        """
+        Handle a message related to tasks.
+
+        Args:
+            message: The parsed message to handle.
+        """
+        if message["type"] == "TASK_COMPLETED":
+            location = message["location"]
+            self.mark_task_completed(location)
+        elif message["type"] == "MEET":
+            location = message["location"]
+            self.leader_coordinator.agent.log(f"Received MEET message for location {location}.")
+
+    def mark_task_completed(self, location):
+        """
+        Mark a task as completed and notify the LeaderCoordinator.
+
+        Args:
+            location: The location of the completed task.
+        """
         if location in self.team_dig_tasks:
-            # Check if the task is not completed
-            task = self.team_dig_tasks[location]
-            return task['completed'] == False
-        # If location is not in team_dig_tasks list, return False (TEAM_DIG not needed)
-        return False
-    
+            self.team_dig_tasks[location]["completed"] = True
+            self.notify_task_completed(location)
+
     def is_enough_agents(self, location):
         """
-        Check if enough agents are available for TEAM_DIG at the location
+        Check if enough agents are available for TEAM_DIG at the location.
         """
         if location in self.team_dig_tasks:
             task = self.team_dig_tasks[location]
-            return len(task['assigned_agents']) >= task['required_agents']
+            return len(task["assigned_agents"]) >= task["required_agents"]
         return False
 
-    # Coordinate agents to dig at the same time at correct locations
     def coordinate_team_dig(self, agent_id, location):
         """
-        Coordinate agents to dig at the same time at the specified location
+        Coordinate agents to dig at the same time at the specified location.
         """
-        # Check if the location is in the task list
-        # Format of task: {location: {assigned_agents, required_agents, completed, planned_turn}}
-        # Format of team_dig_tasks: {location: {assigned_agents, required_agents, completed, planned_turn}}
         if location in self.team_dig_tasks:
             task = self.team_dig_tasks[location]
 
-            #If task already completed, skip it
-            if task['completed']:
+            # If task already completed, skip it
+            if task["completed"]:
                 return False
-            
-            if agent_id not in task['assigned_agents']:
-                task['assigned_agents'].add(agent_id)  # Add agent to the assigned agents set
+
+            if agent_id not in task["assigned_agents"]:
+                task["assigned_agents"].add(agent_id)  # Add agent to the assigned agents set
                 self.call_agents_to_meet(location)  # Notify agents to meet at the location
-                task['dig_count'] += 1  # Increment the dig count
+                task["dig_count"] += 1  # Increment the dig count
 
             # Check if enough agents have arrived to initiate TEAM_DIG
             if self.is_enough_agents(location):
-                self.current_task = location # Set the current task to the location
-                task['completed'] = True    # Mark task as completed
-                self.remove_completed_task(location) # Remove the task from the list
-                
-                # Notify agents that the task is completed
-                # This could be a message to other agents or an update in the memory
-                # Example: self.communication_manager.send_message("TASK_COMPLETED", location)
-                # For now, we just print a message
-                print(f"TEAM_DIG completed at {location} by agents: {task['assigned_agents']}")
-                
-                return True                 # Indicate that the team dig can proceed
+                self.current_task = location  # Set the current task to the location
+                task["completed"] = True  # Mark task as completed
+                self.notify_task_completed(location)  # Notify completion
+                return True  # Indicate that the team dig can proceed
 
         return False  # Not enough agents yet
-    
-    def call_agents_to_meet(self, location):
-        """
-        Notify agents to meet at a specific location for TEAM_DIG
-        """
-        notifications = []  # List to store notifications for agents
-
-        # Check if the location is in the task list and if the task is not completed
-        if location in self.team_dig_tasks:
-            task = self.team_dig_tasks[location]
-
-            # Check if the task is not completed and if agent is not already assigned
-            if task['completed'] == False:
-                for agent_id in task['assigned_agents']:
-                    notification = f"Notify {agent_id} to meet at {location} for TEAM_DIG."
-                    notifications.append(notification)
-
-                    # TODO: once communication manager is implemented, 
-                    # send the notification to the agent via messaging system
-                    # Example: self.communication_manager.send_message(agent_id, notification)
-                    # Also update test cases to check for this behavior
-                    print(notification)  # Keep the print for runtime behavior
-
-        return notifications
-
-    def remove_completed_task(self, location):
-        """
-        Remove a specific completed task from the task list
-        """
-        # Check if the task is completed and remove it from the list
-        if location in self.team_dig_tasks and self.team_dig_tasks[location]['completed']:
-            del self.team_dig_tasks[location]
-            self.current_task = None # Reset current task if it was the completed one
-            return True  # Task removed successfully
-    
-    def remove_completed_tasks(self):
-        """
-        Remove any completed tasks from the task list
-        """
-        completed_tasks = [location for location, task in self.team_dig_tasks.items() if task['completed']]
-        for location in completed_tasks:
-            del self.team_dig_tasks[location]
-
-        # Reset current_task if it was one of the removed tasks
-        if self.current_task in completed_tasks:
-            self.current_task = None
-
-    # Replan when a shared goal is completed
-    def replan_tasks(self):
-        """
-        Replan tasks after a shared goal is completed
-        """
-        # Clear any completed tasks from the list
-        self.remove_completed_tasks()  
-
-        # Reassign agents to new tasks if needed
-        for location, task in self.team_dig_tasks.items():
-            if task['completed'] == False: # Task incomplete
-                if len(task['assigned_agents']) < task['required_agents']:
-                    # Notify agents to meet at the location
-                    self.call_agents_to_meet(location)
-        
-        #TODO: finish this function 
-
-
-
-
-           
-
-
-    # TODO: Handle multi-agent decisions based on messages
-    # Wait for teammate to implement message functions in communication_manager.py
