@@ -1,22 +1,15 @@
 import unittest
 from unittest.mock import MagicMock
 from src.agents.example_agent_a3.agent_helpers.communication_manager import CommunicationManager
-
-'''
-To run pytests, cd into root aegis folder
-cd "c:\your\path\aegis-v3.0.1-a3-tauri\aegis"
-Then run the following command:
-pytest tests/test_communication_manager.py
-This will run all the tests in the file.
-'''
+from src.agents.example_agent_a3.agent_helpers.agent_memory import AgentMemory
 
 class TestCommunicationManager(unittest.TestCase):
     def setUp(self):
         # Create a mock memory object
-        mock_memory = MagicMock()
+        self.mock_memory = MagicMock()
         
         # Initialize the CommunicationManager with the mock memory
-        self.comms = CommunicationManager(memory=mock_memory)
+        self.comms = CommunicationManager(memory=self.mock_memory)
 
     def test_parse_found_message(self):
         # Test parsing a "FOUND" message
@@ -61,6 +54,42 @@ class TestCommunicationManager(unittest.TestCase):
         ]
         result = self.comms.parse_messages(messages)
         self.assertEqual(result, expected)
+
+    def test_add_found_location(self):
+        # Test that a FOUND message updates the memory correctly
+        memory = AgentMemory(agent_id=1)
+        self.comms.memory = memory  # Use the real memory object
+
+        # Simulate handling a FOUND message
+        message = {"type": "FOUND", "location": (3, 4)}
+        self.comms.handle_parsed_message(message, MagicMock())
+
+        # Verify that the location was added to known_survivors
+        self.assertIn((3, 4), memory.get_found_locations())
+
+    def test_add_done_location(self):
+        # Test that a DONE message updates the memory correctly
+        memory = AgentMemory(agent_id=1)
+        self.comms.memory = memory  # Use the real memory object
+
+        # Simulate handling a DONE message
+        message = {"type": "DONE", "location": (5, 6)}
+        self.comms.handle_parsed_message(message, MagicMock())
+
+        # Verify that the location was added to completed_tasks
+        self.assertIn((5, 6), memory.get_done_locations())
+
+    def test_add_assignment(self):
+        # Test that an ASSIGN message updates the memory correctly
+        memory = AgentMemory(agent_id=1)
+        self.comms.memory = memory  # Use the real memory object
+
+        # Simulate handling an ASSIGN message
+        message = {"type": "ASSIGN", "agent_id": 1, "location": (7, 8)}
+        self.comms.handle_parsed_message(message, MagicMock())
+
+        # Verify that the assignment was added to assignments
+        self.assertEqual(memory.get_assignments()[1], (7, 8))
 
 
 if __name__ == "__main__":
