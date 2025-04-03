@@ -161,22 +161,23 @@ class TeamTaskManager:
         if self.current_task in completed_tasks:
             self.current_task = None
 
-    # Replan when a shared goal is completed
-    def replan_tasks(self):
-        """
-        Replan tasks after a shared goal is completed
-        """
-        # Clear any completed tasks from the list
-        self.remove_completed_tasks()  
+    # Move replan tasks to leader_coordinator.py
+    # # Replan when a shared goal is completed
+    # def replan_tasks(self):
+    #     """
+    #     Replan tasks after a shared goal is completed
+    #     """
+    #     # Clear any completed tasks from the list
+    #     self.remove_completed_tasks()  
 
-        # Reassign agents to new tasks if needed
-        for location, task in self.team_dig_tasks.items():
-            if task['completed'] == False: # Task incomplete
-                if len(task['assigned_agents']) < task['required_agents']:
-                    # Notify agents to meet at the location
-                    self.call_agents_to_meet(location)
+    #     # Reassign agents to new tasks if needed
+    #     for location, task in self.team_dig_tasks.items():
+    #         if task['completed'] == False: # Task incomplete
+    #             if len(task['assigned_agents']) < task['required_agents']:
+    #                 # Notify agents to meet at the location
+    #                 self.call_agents_to_meet(location)
         
-        #TODO: finish this function 
+    #     #TODO: finish this function 
 
 
 
