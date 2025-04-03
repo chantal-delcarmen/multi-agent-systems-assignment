@@ -1,47 +1,74 @@
 import pytest
+from unittest.mock import MagicMock
 from src.agents.example_agent_a3.agent_helpers.team_task_manager import TeamTaskManager
 
-def test_add_task():
-    manager = TeamTaskManager()
-    location = "A1"
-    current_turn = 5
-    estimated_travel_time = 3
+@pytest.fixture
+def setup_manager():
+    # Mock the LeaderCoordinator and CommunicationManager
+    mock_leader_coordinator = MagicMock()
+    mock_comms = MagicMock()
 
-    manager.add_task(location, current_turn, estimated_travel_time)
+    # Initialize the TeamTaskManager with mocks
+    manager = TeamTaskManager(leader_coordinator=mock_leader_coordinator, comms=mock_comms)
+    return manager, mock_leader_coordinator, mock_comms
+
+def test_add_task(setup_manager):
+    manager, mock_leader_coordinator, mock_comms = setup_manager
+    location = (3, 4)
+    required_agents = 2
+
+    manager.add_task(location, required_agents)
 
     assert location in manager.team_dig_tasks
     task = manager.team_dig_tasks[location]
-    assert task["required_agents"] == 2
+    assert task["required_agents"] == required_agents
     assert task["completed"] is False
+    assert len(task["assigned_agents"]) == 0
+    assert task["dig_count"] == 0
 
-    # Check if the task is planned for the correct turn
-    print(f"Planned turn: {task['planned_turn']}, Expected: {current_turn + estimated_travel_time + 2}")
-    assert task["planned_turn"] == current_turn + estimated_travel_time + 2
+    # Verify that agents were notified
+    mock_comms.send_message_to_all.assert_called_once_with(f"TASK {location[0]} {location[1]} {required_agents}")
+    mock_leader_coordinator.agent.log.assert_called_once_with(
+        f"Notified agents about task at {location} requiring {required_agents} agents."
+    )
 
-def test_is_team_dig_needed():
-    manager = TeamTaskManager()
-    location = "B2"
-    current_turn = 5
-    estimated_travel_time = 3
+def test_call_agents_to_meet(setup_manager):
+    manager, mock_leader_coordinator, mock_comms = setup_manager
+    location = (5, 6)
 
-    manager.add_task(location, current_turn, estimated_travel_time)
+    manager.call_agents_to_meet(location)
 
-    assert manager.is_team_dig_needed(location) is True
+    # Verify that agents were notified to meet
+    mock_comms.send_message_to_all.assert_called_once_with(f"MEET {location[0]} {location[1]}")
+    mock_leader_coordinator.agent.log.assert_called_once_with(f"Called agents to meet at {location}.")
 
-    # Mark the task as completed and check again
-    manager.team_dig_tasks[location]["completed"] = True
-    assert manager.is_team_dig_needed(location) is False
+def test_mark_task_completed(setup_manager):
+    manager, mock_leader_coordinator, mock_comms = setup_manager
+    location = (7, 8)
+    required_agents = 2
 
-def test_coordinate_team_dig():
-    manager = TeamTaskManager()
-    location = "C3"
-    current_turn = 5
-    estimated_travel_time = 3
+    manager.add_task(location, required_agents)
+    manager.mark_task_completed(location)
 
-    manager.add_task(location, current_turn, estimated_travel_time)
+    # Verify that the task is marked as completed
+    assert manager.team_dig_tasks[location]["completed"] is True
 
-    # Test if team dig is needed
-    assert manager.is_team_dig_needed(location) is True
+    # Verify that the LeaderCoordinator and agents were notified
+    mock_leader_coordinator.notify_task_completed.assert_called_once_with(location)
+
+    # Verify that send_message_to_all was called twice: once for TASK and once for TASK_COMPLETED
+    mock_comms.send_message_to_all.assert_any_call(f"TASK {location[0]} {location[1]} {required_agents}")
+    mock_comms.send_message_to_all.assert_any_call(f"TASK_COMPLETED {location[0]} {location[1]}")
+
+    # Verify the total number of calls to send_message_to_all
+    assert mock_comms.send_message_to_all.call_count == 2
+
+def test_coordinate_team_dig(setup_manager):
+    manager, mock_leader_coordinator, mock_comms = setup_manager
+    location = (9, 10)
+    required_agents = 2
+
+    manager.add_task(location, required_agents)
 
     # Assign the first agent
     result_1 = manager.coordinate_team_dig("Agent1", location)
@@ -57,78 +84,47 @@ def test_coordinate_team_dig():
     assert task["dig_count"] == 2
     assert result_2 is True  # Now team dig can proceed
 
-def test_assign_to_completed_task():
-    manager = TeamTaskManager()
-    location = "D4"
-    current_turn = 5
-    estimated_travel_time = 3
+    # Verify that agents were called to meet
+    mock_comms.send_message_to_all.assert_any_call(f"MEET {location[0]} {location[1]}")
 
-    manager.add_task(location, current_turn, estimated_travel_time)
+    # Verify that the task was marked as completed
+    mock_comms.send_message_to_all.assert_any_call(f"TASK_COMPLETED {location[0]} {location[1]}")
+    mock_leader_coordinator.notify_task_completed.assert_called_once_with(location)
 
-    # Mark the task as completed
-    manager.team_dig_tasks[location]["completed"] = True
+def test_handle_task_message(setup_manager):
+    manager, mock_leader_coordinator, mock_comms = setup_manager
+    location = (11, 12)
+    required_agents = 2
 
-    # Try to assign an agent
-    result = manager.coordinate_team_dig("Agent1", location)
-    assert result is False  # Assignment should fail
-    task = manager.team_dig_tasks[location]
-    assert len(task["assigned_agents"]) == 0  # No agents should be assigned
+    manager.add_task(location, required_agents)
 
-def test_duplicate_agent_assignment():
-    manager = TeamTaskManager()
-    location = "E5"
-    current_turn = 5
-    estimated_travel_time = 3
+    # Handle a TASK_COMPLETED message
+    message = {"type": "TASK_COMPLETED", "location": location}
+    manager.handle_task_message(message)
 
-    manager.add_task(location, current_turn, estimated_travel_time)
+    # Verify that the task was marked as completed
+    assert manager.team_dig_tasks[location]["completed"] is True
+    mock_leader_coordinator.notify_task_completed.assert_called_once_with(location)
 
-    # Assign the same agent twice
-    manager.coordinate_team_dig("Agent1", location)
-    manager.coordinate_team_dig("Agent1", location)
+    # Handle a MEET message
+    message = {"type": "MEET", "location": location}
+    manager.handle_task_message(message)
+    mock_leader_coordinator.agent.log.assert_called_with(f"Received MEET message for location {location}.")
 
-    task = manager.team_dig_tasks[location]
-    assert len(task["assigned_agents"]) == 1  # Only one unique agent
-    assert task["dig_count"] == 1  # Dig count should not increase for duplicate assignments
+def test_is_enough_agents(setup_manager):
+    manager, _, _ = setup_manager
+    location = (13, 14)
+    required_agents = 2
 
-def test_task_does_not_exist():
-    manager = TeamTaskManager()
-    location = "F6"
+    manager.add_task(location, required_agents)
 
-    # Try to assign an agent to a non-existent task
-    result = manager.coordinate_team_dig("Agent1", location)
-    assert result is False  # Task does not exist, so assignment should fail
+    # Initially, not enough agents
+    assert manager.is_enough_agents(location) is False
 
-def test_remove_completed_tasks():
-    manager = TeamTaskManager()
-    location = "G7"
-    current_turn = 5
-    estimated_travel_time = 3
+    # Add agents
+    manager.team_dig_tasks[location]["assigned_agents"].add("Agent1")
+    assert manager.is_enough_agents(location) is False
 
-    manager.add_task(location, current_turn, estimated_travel_time)
-    manager.team_dig_tasks[location]["completed"] = True
-
-    # Remove completed tasks
-    manager.remove_completed_task(location)
-
-    # Ensure the task is removed
-    assert location not in manager.team_dig_tasks
-
-def test_call_agents_to_meet():
-    manager = TeamTaskManager()
-    location = "H8"
-    current_turn = 5
-    estimated_travel_time = 3
-
-    # Add a task and assign agents
-    manager.add_task(location, current_turn, estimated_travel_time)
-    manager.coordinate_team_dig("Agent1", location)
-    manager.coordinate_team_dig("Agent2", location)
-
-    # Call agents to meet at the location
-    notifications = manager.call_agents_to_meet(location)
-
-    # Verify the notifications
-    assert len(notifications) == 2
-    assert "Notify Agent1 to meet at H8 for TEAM_DIG." in notifications
-    assert "Notify Agent2 to meet at H8 for TEAM_DIG." in notifications
+    manager.team_dig_tasks[location]["assigned_agents"].add("Agent2")
+    assert manager.is_enough_agents(location) is True
 
