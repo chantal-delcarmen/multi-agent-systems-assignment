@@ -30,6 +30,8 @@ Mar 30, 2025
 
 """
 
+from .communication_manager import CommunicationManager
+
 class TeamTaskManager:
     def __init__(self, leader_coordinator, comms):
         """
@@ -42,7 +44,7 @@ class TeamTaskManager:
         self.team_dig_tasks = {}  # Task Format: {location: {assigned_agents, required_agents, completed, dig_count}}
         self.current_task = None
         self.leader_coordinator = leader_coordinator
-        self.comms = comms  # CommunicationManager instance
+        self.comms: CommunicationManager = comms  # CommunicationManager instance
 
     def notify_task_completed(self, location):
         """

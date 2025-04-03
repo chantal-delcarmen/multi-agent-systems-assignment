@@ -128,3 +128,18 @@ def test_is_enough_agents(setup_manager):
     manager.team_dig_tasks[location]["assigned_agents"].add("Agent2")
     assert manager.is_enough_agents(location) is True
 
+def test_notify_agents_about_task(setup_manager):
+    manager, mock_leader_coordinator, mock_comms = setup_manager
+    location = (3, 4)
+    required_agents = 2
+
+    # Call the method
+    manager.notify_agents_about_task(location, required_agents)
+
+    # Verify that the correct message was sent to all agents
+    mock_comms.send_message_to_all.assert_called_once_with(f"TASK {location[0]} {location[1]} {required_agents}")
+
+    # Verify that the correct log message was created
+    mock_leader_coordinator.agent.log.assert_called_once_with(
+        f"Notified agents about task at {location} requiring {required_agents} agents."
+    )
