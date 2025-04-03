@@ -160,31 +160,39 @@ class ExampleAgent(Brain):
         if top_layer is None:
             self._agent.log("Top layer is None. Observing surroundings.")
             current_location = self._agent.get_location()
+
+            # Check if the cell has already been observed
+            if self.memory.is_cell_observed(current_location):
+                self._agent.log(f"Cell {current_location} has already been observed. Exploring a new direction.")
+                unexplored_direction = self.find_unexplored_direction(world, cell)
+                if unexplored_direction:
+                    self.send_and_end_turn(MOVE(unexplored_direction))
+                else:
+                    self.send_and_end_turn(MOVE(Direction.CENTER))
+                return
+
+            self._agent.log("Top layer is None. Observing surroundings.")
+            self.memory.mark_cell_as_observed(current_location)
+
+            # Observe the current cell
             self.send_and_end_turn(OBSERVE(current_location))
             return
 
         # If a survivor is present, save it and end the turn.
         if isinstance(top_layer, Survivor):
+            self._agent.log("Survivor detected. Sending SAVE_SURV command.")
             self.send_and_end_turn(SAVE_SURV())
             return
 
         # If rubble is present, coordinate a TEAM_DIG task.
         if isinstance(top_layer, Rubble):
             location = (cell.location.x, cell.location.y)
-            self._agent.log(f"Checking rubble at location {location}.")
-
-            # Use the remove_agents attribute to determine the number of required agents
-            required_agents = top_layer.remove_agents
-
-            if not self.team_task_manager.coordinate_team_dig(self._agent.get_id(), location):
-                self._agent.log("Not enough agents for TEAM_DIG. Moving to CENTER.")
-                self.send_and_end_turn(MOVE(Direction.CENTER))
-            else:
-                self._agent.log(f"Enough agents available. Sending TEAM_DIG command with {required_agents} agents.")
-                self.send_and_end_turn(TEAM_DIG())
+            self._agent.log(f"Rubble detected at {location}. Coordinating TEAM_DIG.")
+            self.team_task_manager.coordinate_team_dig(self._agent.get_id(), location)
+            self.send_and_end_turn(TEAM_DIG())
             return
 
-        # Find a goal (survivor location)
+        # Find a goal (e.g., survivor location)
         goal_cell = self.find_survivor(world)
         if goal_cell is not None:
             start_cell = cell
@@ -200,6 +208,16 @@ class ExampleAgent(Brain):
                 # If the path is empty, stay in place
                 self.send_and_end_turn(MOVE(Direction.CENTER))
                 return
+
+        # Fallback: Explore a new direction
+        unexplored_direction = self.find_unexplored_direction(world, cell)
+        if unexplored_direction:
+            self._agent.log(f"Exploring unexplored direction: {unexplored_direction}")
+            self.send_and_end_turn(MOVE(unexplored_direction))
+        else:
+            # If no unexplored directions are available, move to the CENTER
+            self._agent.log("No tasks or goals found. Moving to CENTER.")
+            self.send_and_end_turn(MOVE(Direction.CENTER))
 
     # Send a command and end your turn
     def send_and_end_turn(self, command: AgentCommand):
@@ -230,4 +248,20 @@ class ExampleAgent(Brain):
                     self._agent.log(f"Rubble detected at {cell.location}. Observing for life signals.")
                     self.send_and_end_turn(OBSERVE(cell.location))
                     return None  # Wait for the observation result
+        return None
+
+    def find_unexplored_direction(self, world, current_cell):
+        """
+        Find an unexplored direction from the current cell.
+        """
+        for direction in Direction:
+            # Use the correct method to calculate the neighbor location
+            neighbor_location = create_location(
+                current_cell.location.x + direction.dx,
+                current_cell.location.y + direction.dy
+            )
+            neighbor_cell = world.get_cell_at(neighbor_location)
+            print(f"Checking neighbor cell at {neighbor_location}: {neighbor_cell}")
+            if neighbor_cell and not self.memory.is_cell_observed(neighbor_location):
+                return direction
         return None
