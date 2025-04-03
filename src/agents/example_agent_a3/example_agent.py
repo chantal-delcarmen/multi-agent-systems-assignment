@@ -31,6 +31,7 @@ from .agent_helpers.astar_pathfinder import AStarPathfinder
 from .agent_helpers.goal_planner import GoalPlanner
 from .agent_helpers.leader_coordinator import LeaderCoordinator
 from .agent_helpers.communication_manager import CommunicationManager
+from .agent_helpers.team_task_manager import TeamTaskManager
 """
 Class ExampleAgent:
 This class is responsible for implementing the agent's logic
@@ -52,6 +53,7 @@ class ExampleAgent(Brain):
         self.energy_manager = EnergyManager(self.memory)
         self.goal_planner = GoalPlanner(self._agent)
         self.leader = LeaderCoordinator(self._agent)
+        self.team_task_manager = TeamTaskManager(self.leader, self.comms)  # Initialize TeamTaskManager
         self.turn_counter = 0   # Keep track of number of turns
 
     # Handle functions:
@@ -61,11 +63,7 @@ class ExampleAgent(Brain):
     # Handle the result of sending a message
     @override
     def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
-        # # Log the raw SEND_MESSAGE_RESULT object for debugging
-        # self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")
-        # self._agent.log(f"Raw message from SEND_MESSAGE_RESULT: {smr.msg}")
-
-        # Check if the message is valid
+        # Log the raw SEND_MESSAGE_RESULT object for debugging
         if not smr.msg:
             self._agent.log("SEND_MESSAGE_RESULT contains no message. Skipping.")
             return
@@ -76,9 +74,14 @@ class ExampleAgent(Brain):
             self._agent.log("Parsed messages are empty or invalid. Skipping.")
             return
 
-        # Delegate handling of parsed messages to the CommunicationManager
+        # Delegate handling of parsed messages
         for message in parsed_messages:
-            self.comms.handle_parsed_message(message, self._agent)
+            if message["type"] in ["TASK_COMPLETED", "MEET"]:
+                # Delegate task-related messages to the TeamTaskManager
+                self.team_task_manager.handle_task_message(message)
+            else:
+                # Handle other messages using CommunicationManager
+                self.comms.handle_parsed_message(message, self._agent)
 
     # Handle the result of observing the world
     @override
