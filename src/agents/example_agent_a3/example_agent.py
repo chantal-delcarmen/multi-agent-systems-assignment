@@ -108,17 +108,13 @@ class ExampleAgent(Brain):
     def think(self) -> None:
         self._agent.log("Thinking")
 
-        # Testing debug
-        self._agent.send(SEND_MESSAGE(AgentIDList(), "FOUND 3 4"))
-
         # Retrieve the current state of the world.
         world = self.get_world()
         if world is None:
             self.send_and_end_turn(MOVE(Direction.CENTER))
             return
 
-        # Fetch the cell at the agent’s current location. If the location is outside the world’s bounds,
-        # return a default move action and end the turn.
+        # Fetch the cell at the agent’s current location.
         cell = world.get_cell_at(self._agent.get_location())
         if cell is None:
             self.send_and_end_turn(MOVE(Direction.CENTER))
@@ -132,9 +128,16 @@ class ExampleAgent(Brain):
             self.send_and_end_turn(SAVE_SURV())
             return
 
-        # If rubble is present, clear it and end the turn.
+        # If rubble is present, coordinate a TEAM_DIG task.
         if isinstance(top_layer, Rubble):
-            self.send_and_end_turn(TEAM_DIG())
+            location = (cell.location.x, cell.location.y)
+            if self.team_task_manager.is_enough_agents(location):
+                # If enough agents are present, send the TEAM_DIG command
+                self.send_and_end_turn(TEAM_DIG())
+            else:
+                # If not enough agents, coordinate the task
+                self.team_task_manager.coordinate_team_dig(self._agent.get_id(), location)
+                self.send_and_end_turn(MOVE(Direction.CENTER))
             return
 
         # Find a goal (survivor location)
