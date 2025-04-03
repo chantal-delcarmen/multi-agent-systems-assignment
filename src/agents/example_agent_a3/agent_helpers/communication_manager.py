@@ -82,4 +82,30 @@ class CommunicationManager:
 
         return parsed_messages
 
+    def handle_parsed_message(self, message, agent):
+        """
+        Handle a parsed message based on its type.
+        :param message: The parsed message dictionary.
+        :param agent: The agent instance for logging or additional actions.
+        """
+        message_type = message.get("type")
+        if message_type == "FOUND":
+            # Handle a "FOUND" message
+            x, y = message["location"]
+            agent.log(f"FOUND message received: Location ({x}, {y})")
+            self.memory.add_found_location(x, y)
+        elif message_type == "DONE":
+            # Handle a "DONE" message
+            x, y = message["location"]
+            agent.log(f"DONE message received: Location ({x}, {y})")
+            self.memory.add_done_location(x, y)
+        elif message_type == "ASSIGN":
+            # Handle an "ASSIGN" message
+            agent_id = message["agent_id"]
+            x, y = message["location"]
+            agent.log(f"ASSIGN message received: Agent {agent_id} assigned to ({x}, {y})")
+            self.memory.add_assignment(agent_id, x, y)
+        else:
+            # Handle unknown message types
+            agent.log(f"Unknown message type: {message_type}")
 

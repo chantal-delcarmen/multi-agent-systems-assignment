@@ -59,13 +59,11 @@ class ExampleAgent(Brain):
     # TODO: connect helper classes to this one 
     
     # Handle the result of sending a message
-    # todo:zainab
-
     @override
     def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
-        # Log the raw SEND_MESSAGE_RESULT object for debugging
-        self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")
-        self._agent.log(f"Raw message from SEND_MESSAGE_RESULT: {smr.msg}")
+        # # Log the raw SEND_MESSAGE_RESULT object for debugging
+        # self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")
+        # self._agent.log(f"Raw message from SEND_MESSAGE_RESULT: {smr.msg}")
 
         # Check if the message is valid
         if not smr.msg:
@@ -78,28 +76,9 @@ class ExampleAgent(Brain):
             self._agent.log("Parsed messages are empty or invalid. Skipping.")
             return
 
-        # Iterate through the parsed messages and handle them based on their type
+        # Delegate handling of parsed messages to the CommunicationManager
         for message in parsed_messages:
-            message_type = message.get("type")
-            if message_type == "FOUND":
-                # Handle a "FOUND" message (e.g., a location of interest was found)
-                x, y = message["location"]
-                self._agent.log(f"FOUND message received: Location ({x}, {y})")
-                self.memory.add_found_location(x, y)
-            elif message_type == "DONE":
-                # Handle a "DONE" message (e.g., a task was completed)
-                x, y = message["location"]
-                self._agent.log(f"DONE message received: Location ({x}, {y})")
-                self.memory.add_done_location(x, y)
-            elif message_type == "ASSIGN":
-                # Handle an "ASSIGN" message (e.g., a task was assigned to an agent)
-                agent_id = message["agent_id"]
-                x, y = message["location"]
-                self._agent.log(f"ASSIGN message received: Agent {agent_id} assigned to ({x}, {y})")
-                self.memory.add_assignment(agent_id, x, y)
-            else:
-                # Handle unknown message types
-                self._agent.log(f"Unknown message type: {message_type}")
+            self.comms.handle_parsed_message(message, self._agent)
 
     # Handle the result of observing the world
     @override
@@ -125,6 +104,9 @@ class ExampleAgent(Brain):
     @override
     def think(self) -> None:
         self._agent.log("Thinking")
+
+        # Testing debug
+        self._agent.send(SEND_MESSAGE(AgentIDList(), "FOUND 3 4"))
 
         # Retrieve the current state of the world.
         world = self.get_world()
