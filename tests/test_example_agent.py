@@ -13,9 +13,8 @@ from src.agents.example_agent_a3.example_agent import ExampleAgent
 from aegis import (
     END_TURN,
     SAVE_SURV,
-    OBSERVE_RESULT,
     SEND_MESSAGE_RESULT,
-    SAVE_SURV_RESULT,
+    OBSERVE_RESULT,
     TEAM_DIG,
     MOVE,
     Rubble,
@@ -50,7 +49,7 @@ class TestExampleAgent(unittest.TestCase):
     def test_handle_observe_result_with_rubble(self):
         # Mock a rubble cell
         mock_cell_info = MagicMock(spec=CellInfo)
-        mock_cell_info.top_layer = Rubble()  # Set top_layer directly
+        mock_cell_info.top_layer = Rubble(remove_agents=3)  # Set remove_agents dynamically
         mock_cell_info.location = create_location(3, 4)
 
         # Mock OBSERVE_RESULT
@@ -60,9 +59,9 @@ class TestExampleAgent(unittest.TestCase):
         # Call handle_observe_result
         self.agent.handle_observe_result(observe_result)
 
-        # Verify that the task was added to the TeamTaskManager
-        self.mock_team_task_manager.add_task.assert_called_once_with((3, 4), 2)
-        self.mock_agent.log.assert_any_call("Added rubble task at (3, 4) requiring 2 agents.")
+        # Verify that the task was added to the TeamTaskManager with the correct number of agents
+        self.mock_team_task_manager.add_task.assert_called_once_with((3, 4), 3)
+        self.mock_agent.log.assert_any_call("Added rubble task at (3, 4) requiring 3 agents.")
 
     def test_handle_observe_result_with_life_signals(self):
         # Mock a cell with life signals
@@ -72,13 +71,16 @@ class TestExampleAgent(unittest.TestCase):
 
         # Mock OBSERVE_RESULT
         observe_result = OBSERVE_RESULT(energy_level=100, cell_info=mock_cell_info, life_signals=MagicMock())
-        observe_result.life_signals.size.return_value = 1  # Life signals detected
+        observe_result.life_signals.size.return_value = 2  # Two life signals detected
+        observe_result.life_signals.get.side_effect = [10, 20]  # Energy levels of survivors
 
         # Call handle_observe_result
         self.agent.handle_observe_result(observe_result)
 
         # Verify that life signals were logged
-        self.mock_agent.log.assert_any_call("Detected life signals at ( X 5 , Y 6 ).")
+        self.mock_agent.log.assert_any_call("Detected 2 life signals at ( X 5 , Y 6 ).")
+        self.mock_agent.log.assert_any_call("Survivor detected with energy level 10 at ( X 5 , Y 6 ).")
+        self.mock_agent.log.assert_any_call("Survivor detected with energy level 20 at ( X 5 , Y 6 ).")
 
     def test_handle_send_message_result(self):
         # Mock an AgentIDList with a size method
@@ -101,7 +103,7 @@ class TestExampleAgent(unittest.TestCase):
         # Mock the world and cell with rubble
         mock_world = MagicMock()
         mock_cell = MagicMock()
-        mock_cell.top_layer = Rubble()  # Set top_layer directly
+        mock_cell.top_layer = Rubble(remove_agents=4)  # Set remove_agents dynamically
         mock_cell.location = create_location(7, 8)
         self.mock_agent.get_location.return_value = create_location(7, 8)
         mock_world.get_cell_at.return_value = mock_cell
@@ -122,7 +124,7 @@ class TestExampleAgent(unittest.TestCase):
         # Mock the world and cell with rubble
         mock_world = MagicMock()
         mock_cell = MagicMock()
-        mock_cell.top_layer = Rubble()  # Set top_layer directly
+        mock_cell.top_layer = Rubble(remove_agents=2)  # Set remove_agents dynamically
         mock_cell.location = create_location(7, 8)
         self.mock_agent.get_location.return_value = create_location(7, 8)
         mock_world.get_cell_at.return_value = mock_cell

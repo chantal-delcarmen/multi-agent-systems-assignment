@@ -101,7 +101,11 @@ class ExampleAgent(Brain):
         # Check if the observed cell contains rubble
         if isinstance(cell_info.top_layer, Rubble):
             location = (cell_info.location.x, cell_info.location.y)
-            required_agents = 2  # Example: Assume 2 agents are required for TEAM_DIG
+
+            # Use the remove_agents attribute to determine the number of required agents
+            required_agents = cell_info.top_layer.remove_agents
+
+            # Add the task to the TeamTaskManager
             self.team_task_manager.add_task(location, required_agents)
             self._agent.log(f"Added rubble task at {location} requiring {required_agents} agents.")
 
@@ -135,6 +139,7 @@ class ExampleAgent(Brain):
         # Retrieve the current state of the world.
         world = self.get_world()
         if world is None:
+            self._agent.log("World is None. Moving to CENTER.")
             self.send_and_end_turn(MOVE(Direction.CENTER))
             return
 
@@ -167,11 +172,15 @@ class ExampleAgent(Brain):
         if isinstance(top_layer, Rubble):
             location = (cell.location.x, cell.location.y)
             self._agent.log(f"Checking rubble at location {location}.")
+
+            # Use the remove_agents attribute to determine the number of required agents
+            required_agents = top_layer.remove_agents
+
             if not self.team_task_manager.coordinate_team_dig(self._agent.get_id(), location):
                 self._agent.log("Not enough agents for TEAM_DIG. Moving to CENTER.")
                 self.send_and_end_turn(MOVE(Direction.CENTER))
             else:
-                self._agent.log("Enough agents available. Sending TEAM_DIG command.")
+                self._agent.log(f"Enough agents available. Sending TEAM_DIG command with {required_agents} agents.")
                 self.send_and_end_turn(TEAM_DIG())
             return
 
