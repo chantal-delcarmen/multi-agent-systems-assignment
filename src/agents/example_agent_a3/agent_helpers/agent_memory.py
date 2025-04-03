@@ -16,7 +16,7 @@ class AgentMemory:
         self.agent_id = agent_id
         self.location = None
         self.energy = 100
-        self.current_task = None                # Assigned task (if any)
+        self.current_task = None        # Assigned task (if any)
         self.turn_counter = 0           # Number of turns since the agent was created
         self.known_survivors = set()    # Create empty set for known survivors
         self.completed_tasks = set()    # Create empty set for completed tasks
@@ -62,13 +62,6 @@ class AgentMemory:
     def get_messages(self):
         """ Retrieve all received messages. """
         return self.messages_received
-    
-    # def get_agent_id(self):
-    #     """
-    #     Get the agent's ID."
-    #     :return: The agent's ID
-    #     """
-    #     return self.agent_id
 
     def add_found_location(self, x, y):
         """
