@@ -32,7 +32,6 @@ from .agent_helpers.astar_pathfinder import AStarPathfinder
 from .agent_helpers.goal_planner import GoalPlanner
 from .agent_helpers.leader_coordinator import LeaderCoordinator
 from .agent_helpers.communication_manager import CommunicationManager
-from .agent_helpers.team_task_manager import TeamTaskManager
 """
 Class ExampleAgent:
 This class is responsible for implementing the agent's logic
@@ -49,12 +48,11 @@ class ExampleAgent(Brain):
     def __init__(self) -> None:
         super().__init__()
         self._agent: AgentController = BaseAgent.get_agent()
-        self.memory = AgentMemory(self._agent)
+        self.memory = AgentMemory(self._agent.get_agent_id().id)
         self.comms = CommunicationManager(self.memory)
         self.energy_manager = EnergyManager(self.memory)
         self.goal_planner = GoalPlanner(self._agent)
         self.leader = LeaderCoordinator(self._agent)
-        self.team_task_manager = TeamTaskManager(self.leader, self.comms)  # Initialize TeamTaskManager
         self.turn_counter = 0   # Keep track of number of turns
 
     # Handle functions:
@@ -62,27 +60,37 @@ class ExampleAgent(Brain):
     # TODO: connect helper classes to this one 
     
     # Handle the result of sending a message
+    # todo:zainab
     @override
     def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
-        # Log the raw SEND_MESSAGE_RESULT object for debugging
-        if not smr.msg:
-            self._agent.log("SEND_MESSAGE_RESULT contains no message. Skipping.")
-            return
+        self._agent.log(f"SEND_MESSAGE_RESULT: {smr}")
+        self._agent.log(f"{smr}")
+        message = smr.msg
+        self._agent.log(f"Message: {message}")
 
-        # Parse the message using the CommunicationManager
-        parsed_messages = self.comms.parse_messages([smr.msg])
-        if not parsed_messages:
-            self._agent.log("Parsed messages are empty or invalid. Skipping.")
-            return
-
-        # Delegate handling of parsed messages
-        for message in parsed_messages:
-            if message["type"] in ["TASK_COMPLETED", "MEET"]:
-                # Delegate task-related messages to the TeamTaskManager
-                self.team_task_manager.handle_task_message(message)
+        parsed_message = CommunicationManager.parse_messages([message])
+        self._agent.log(f"Parsed message: {parsed_message}")
+        # Iterate through the parsed messages and update memory or task manager
+        for i in parsed_message:
+            if i['type'] == "FOUND":
+                # x and y coordinates of the found agents
+                x, y = i['location']
+                self._agent.log(f"FOUND: {x}, {y}")
+                self.memory.add_found_location(x, y)
+            elif i['type'] == "DONE":
+                # x and y coordinates of the completed task
+                x, y = i['location']
+                self._agent.log(f"DONE: {x}, {y}")
+                self.memory.add_done_location(x, y)
+            elif i['type'] == "ASSIGN":
+                # agent_id, x and y coordinates of the task
+                agent_id, (x, y) = i["agentID"], i['location']
+                self._agent.log(f"ASSIGN: {agent_id}, to, {x}, {y}")
+                self.memory.add_assignment(agent_id, x, y)
             else:
-                # Handle other messages using CommunicationManager
-                self.comms.handle_parsed_message(message, self._agent)
+                self._agent.log(f"Unknown message type: {i['type']}")
+                self._agent.log(f"Message: {message}")
+        #print("#--- You need to implement handle_send_message_result function! ---#")
 
     # Handle the result of observing the world
     @override
