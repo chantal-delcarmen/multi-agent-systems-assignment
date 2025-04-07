@@ -265,3 +265,26 @@ class ExampleAgent(Brain):
             if neighbor_cell and not self.memory.is_cell_observed(neighbor_location):
                 return direction
         return None
+
+    def think(self):
+
+        ## Main decision loop for the agent. Called every round.
+
+        self.memory.set_turn_counter(self.memory.get_turn_counter() + 1)
+
+        # Check if the agent should rest
+        if self.energy_manager.should_rest():
+            self.log("Decided to sleep to regain energy.")
+            self.send(SLEEP())
+            return
+
+        self.log("Default action: nothing to do this round.")
+        self.send(SLEEP())  # Placeholder action
+
+    def send(self, command):
+        # Hook to send command to AEGIS system
+        print(f"[SEND] {command}")
+
+    def log(self, msg):
+        # Hook to print agent logs
+        print(f"[Agent {self.agent_id}] {msg}")
