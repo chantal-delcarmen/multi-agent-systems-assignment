@@ -143,6 +143,17 @@ class ExampleAgent(Brain):
             self.send_and_end_turn(MOVE(Direction.CENTER))
             return
 
+        # If the agent is the leader, perform leader-specific tasks.
+        if self.leader_coordinator.should_lead():
+            self._agent.log("I am the leader. Finding survivor goals.")
+            self.goal_planner.find_survivor_goals(world)  # Use GoalPlanner to find survivor goals
+            self._agent.log("Assigning agents to goals.")
+            agents = world.get_all_agents()  # Get all agents in the world
+            self.leader_coordinator.assign_agents_to_goals(agents, world)  # Assign tasks using LeaderCoordinator
+        else:
+            self._agent.log("I am not the leader. Performing assigned tasks.")
+            self.perform_assigned_task()  # Perform tasks assigned by the leader
+
         # Fetch the cell at the agent’s current location.
         cell = world.get_cell_at(self._agent.get_location())
         self._agent.log(f"Cell at current location: {cell}")
@@ -171,10 +182,7 @@ class ExampleAgent(Brain):
                     self.send_and_end_turn(MOVE(Direction.CENTER))
                 return
 
-            self._agent.log("Top layer is None. Observing surroundings.")
             self.memory.mark_cell_as_observed(current_location)
-
-            # Observe the current cell
             self.send_and_end_turn(OBSERVE(current_location))
             return
 
@@ -193,7 +201,7 @@ class ExampleAgent(Brain):
             return
 
         # Find a goal (e.g., survivor location)
-        goal_cell = self.find_survivor(world)
+        goal_cell = self.goal_planner.get_next_goal()  # Use GoalPlanner to get the next goal
         if goal_cell is not None:
             start_cell = cell
             pathfinder = AStarPathfinder(world, self._agent)
