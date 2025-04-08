@@ -20,17 +20,18 @@ from agents.example_agent_a3.agent_helpers.astar_pathfinder import AStarPathfind
 
 
 class LeaderCoordinator:
-    def __init__(self, agent):
+    def __init__(self, agent, goal_planner):
         """
         Initialize the LeaderCoordinator.
 
         Args:
             agent: The agent instance that acts as the leader.
+            goal_planner: An instance of GoalPlanner to manage goals.
         """
-        self.agent = agent  # Use the passed-in agent instance
+        self.agent = agent
+        self.goal_planner = goal_planner  # Use GoalPlanner for goal management
         self.is_leader = self.agent.get_agent_id().id == 1  # Leader is agent with ID 1
         self.assignments = {}  # Tracks agent assignments (agent_id -> task)
-        self.survivors_remaining = set()  # Tracks locations of unsaved survivors
         self.team_task_managers = []  # List of TeamTaskManager instances
 
     def should_lead(self):
@@ -40,21 +41,29 @@ class LeaderCoordinator:
         """
         return self.is_leader
 
-    def assign_agents_to_goals(self, agents, survivor_cells,world):
-          # to be implemented
+    def assign_agents_to_goals(self, agents, world):
+        """
+        Assign agents to survivor goals using the GoalPlanner.
+
+        Args:
+            agents: List of available agents.
+            world: The current world instance.
+        """
         if not self.should_lead():
             return
 
-        self.survivors_remaining.update(survivor_cells)
+        # Fetch all survivor goals from the GoalPlanner
+        survivor_goals = self.goal_planner.get_all_goals()
 
         available_agents = list(agents)
 
-        for cell in survivor_cells:
+        for goal in survivor_goals:
             if not available_agents:
                 break
-            closest_agent = self.find_closest_agent(available_agents, cell,world)
+            closest_agent = self.find_closest_agent(available_agents, goal.location, world)
             if closest_agent is not None:
-                self.assignments[closest_agent] = cell
+                self.assignments[closest_agent] = goal
+                self.goal_planner.assign_goal_to_agent(closest_agent, goal)
                 available_agents = [
                     agent for agent in available_agents
                     if agent.get_agent_id().id != closest_agent
@@ -99,18 +108,20 @@ class LeaderCoordinator:
     def notify_task_completed(self, location):
         """
         Notify the leader that a task has been completed.
-        This method should be called by the agents when they finish their tasks.
+
+        Args:
+            location: The location of the completed task.
         """
-        
         agents_ids_to_remove = [
-            agent_id for agent_id, task in self.assignments.items() if task == location
+            agent_id for agent_id, task in self.assignments.items() if task.location == location
         ]
         for agent_id in agents_ids_to_remove:
             del self.assignments[agent_id]
-            
-        # Mark the survivors as saved
-        self.mark_survivor_saved(location)
-        
+
+        # Notify the GoalPlanner that the goal is completed
+        self.goal_planner.remove_completed_goal(location)
+
+        # Notify team task managers
         for manager in self.team_task_managers:
             if hasattr(manager, "notify_task_completed"):
                 manager.notify_task_completed(location)
