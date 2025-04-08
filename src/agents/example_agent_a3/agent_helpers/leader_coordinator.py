@@ -16,7 +16,7 @@ Course: CPSC 383 - Winter 2025 | T05
 Assignment 3 - Multi-Agent Systems
 Mar 30, 2025
 """
-from agents.example_agent_a3.agent_helpers.astar_pathfinder import AStarPathfinder
+from .astar_pathfinder import AStarPathfinder
 
 
 class LeaderCoordinator:
@@ -57,17 +57,22 @@ class LeaderCoordinator:
 
         available_agents = list(agents)
 
+        print(f"DEBUG: Survivor goals: {survivor_goals}")
+        print(f"DEBUG: Available agents: {available_agents}")
+
         for goal in survivor_goals:
             if not available_agents:
                 break
             closest_agent = self.find_closest_agent(available_agents, goal.location, world)
+            print(f"DEBUG: Closest agent for goal {goal.location}: {closest_agent}")
             if closest_agent is not None:
                 self.assignments[closest_agent] = goal
                 self.goal_planner.assign_goal_to_agent(closest_agent, goal)
                 available_agents = [
                     agent for agent in available_agents
-                    if agent.get_agent_id().id != closest_agent
+                    if agent.get_agent_id().id != closest_agent.get_agent_id().id
                 ]
+        print(f"DEBUG: Final assignments: {self.assignments}")
 
     def find_closest_agent(self, agents, target_location, world):
         """
@@ -84,20 +89,23 @@ class LeaderCoordinator:
         for agent in agents:
             start_cell = world.get_cell_at(agent.get_location())
             goal_cell = world.get_cell_at(target_location)
-            
+            print(f"DEBUG: Agent {agent.get_agent_id().id} start: {start_cell.location}, goal: {goal_cell.location}")
+
             pathfinder = AStarPathfinder(world, agent)
             path = pathfinder.find_path(start_cell, goal_cell)
-            
-            if path and goal_cell.location in pathfinder.cost_so_far:
-                cost = pathfinder.cost_so_far[goal_cell.location]
+            print(f"DEBUG: Path for agent {agent.get_agent_id().id}: {path}")
+
+            # Convert goal_cell.location to a tuple before checking cost_so_far
+            goal_location_tuple = (goal_cell.location.x, goal_cell.location.y)
+            if path and goal_location_tuple in pathfinder.cost_so_far:
+                cost = pathfinder.cost_so_far[goal_location_tuple]
+                print(f"DEBUG: Cost for agent {agent.get_agent_id().id} to goal {goal_location_tuple}: {cost}")
                 if cost < best_cost:
                     best_cost = cost
                     best_agent = agent
-                    
-        return best_agent if best_agent else None
-                    
-        
-            
+        print(f"DEBUG: Best agent for location {target_location}: {best_agent}")
+        return best_agent
+
     def mark_survivor_saved(self, location):
         if location in self.survivors_remaining:
             self.survivors_remaining.remove(location)
