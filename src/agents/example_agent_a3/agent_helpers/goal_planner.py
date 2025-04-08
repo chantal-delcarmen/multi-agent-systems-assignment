@@ -60,6 +60,7 @@ class GoalPlanner:
         self._survivor_goals = survivor_goals
         self._current_goal_index = 0  # Reset to start with the first goal
         self.agent.log(f"Found {len(self._survivor_goals)} survivor goals.")
+        self.agent.log(f"Added {len(self._survivor_goals)} survivor goals.")
 
     def get_next_goal(self):
         """
@@ -94,8 +95,8 @@ class GoalPlanner:
         Args:
             goal_cell: The cell representing the unreachable goal.
         """
+        self.agent.log(f"Marking goal at {goal_cell.location} as unreachable.")
         self._unreachable_goals.add(goal_cell)
-        # Remove it if it's still in the _survivor_goals list
         if goal_cell in self._survivor_goals:
             self._survivor_goals.remove(goal_cell)
 
@@ -139,9 +140,9 @@ class GoalPlanner:
             goal_cell: The cell representing the goal that was completed.
         """
         if goal_cell in self._survivor_goals:
+            self.agent.log(f"Removing completed goal at {goal_cell.location}.")
             index = self._survivor_goals.index(goal_cell)
             self._survivor_goals.remove(goal_cell)
-            # Adjust current goal index if needed
             if index < self._current_goal_index:
                 self._current_goal_index -= 1
 
