@@ -135,4 +135,3 @@ class GoalPlanner:
             # Adjust current goal index if needed
             if index < self._current_goal_index:
                 self._current_goal_index -= 1
-
