@@ -16,6 +16,8 @@ Course: CPSC 383 - Winter 2025 | T05
 Assignment 3 - Multi-Agent Systems
 Mar 30, 2025
 """
+from agents.example_agent_a3.agent_helpers.astar_pathfinder import AStarPathfinder
+
 
 class LeaderCoordinator:
     def __init__(self, agent):
@@ -38,10 +40,27 @@ class LeaderCoordinator:
         """
         return self.is_leader
 
-    def assign_agents_to_goals(self, agents, survivor_cells):
-        pass  # to be implemented
+    def assign_agents_to_goals(self, agents, survivor_cells,world):
+          # to be implemented
+        if not self.should_lead():
+            return
 
-    def find_closest_agent(self, agents, target_location):
+        self.survivors_remaining.update(survivor_cells)
+
+        available_agents = list(agents)
+
+        for cell in survivor_cells:
+            if not available_agents:
+                break
+            closest_agent = self.find_closest_agent(available_agents, cell,world)
+            if closest_agent is not None:
+                self.assignments[closest_agent] = cell
+                available_agents = [
+                    agent for agent in available_agents
+                    if agent.get_agent_id().id != closest_agent
+                ]
+
+    def find_closest_agent(self, agents, target_location, world):
         """
         Find the closest available agent to a target location.
 
@@ -51,18 +70,47 @@ class LeaderCoordinator:
 
         :return: The ID of the closest agent, or None if no agents are available.
         """
-        pass  # to be implemented
-
+        best_agent = None
+        best_cost = float('inf')
+        for agent in agents:
+            start_cell = world.get_cell_at(agent.get_location())
+            goal_cell = world.get_cell_at(target_location)
+            
+            pathfinder = AStarPathfinder(world, agent)
+            path = pathfinder.find_path(start_cell, goal_cell)
+            
+            if path and goal_cell.location in pathfinder.cost_so_far:
+                cost = pathfinder.cost_so_far[goal_cell.location]
+                if cost < best_cost:
+                    best_cost = cost
+                    best_agent = agent
+                    
+        return best_agent if best_agent else None
+                    
+        
+            
     def mark_survivor_saved(self, location):
-        pass  # to be implemented
+        if location in self.survivors_remaining:
+            self.survivors_remaining.remove(location)
 
     def all_survivors_saved(self):
-        pass  # to be implemented
+        return len(self.survivors_remaining) == 0   # to be implemented
 
     def notify_task_completed(self, location):
         """
         Notify the leader that a task has been completed.
         This method should be called by the agents when they finish their tasks.
         """
-        pass
-        # Implementation to be added later
+        
+        agents_ids_to_remove = [
+            agent_id for agent_id, task in self.assignments.items() if task == location
+        ]
+        for agent_id in agents_ids_to_remove:
+            del self.assignments[agent_id]
+            
+        # Mark the survivors as saved
+        self.mark_survivor_saved(location)
+        
+        for manager in self.team_task_managers:
+            if hasattr(manager, "notify_task_completed"):
+                manager.notify_task_completed(location)
