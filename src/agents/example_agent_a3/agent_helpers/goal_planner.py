@@ -144,3 +144,17 @@ class GoalPlanner:
             # Adjust current goal index if needed
             if index < self._current_goal_index:
                 self._current_goal_index -= 1
+
+    def detect_and_replan_goals(self, world, significant_change_detected):
+        """
+        Detects significant changes in the environment and triggers replanning
+        if necessary.
+
+        Args:
+            world: The current world instance.
+            significant_change_detected: A boolean indicating if the environment
+                                         has changed significantly.
+        """
+        if significant_change_detected:
+            self.agent.log("Significant change detected. Replanning goals.")
+            self.replan_goals(world)
