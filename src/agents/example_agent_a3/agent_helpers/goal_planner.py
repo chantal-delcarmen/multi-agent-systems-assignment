@@ -158,3 +158,18 @@ class GoalPlanner:
         if significant_change_detected:
             self.agent.log("Significant change detected. Replanning goals.")
             self.replan_goals(world)
+
+    def assign_goal_to_agent(self, agent_id, goal_cell):
+        """
+        Assigns a specific goal to another agent.
+
+        Args:
+            agent_id: The ID of the agent to assign the goal to.
+            goal_cell: The cell representing the goal to assign.
+        """
+        if goal_cell in self._survivor_goals:
+            self.agent.comms.send_message(agent_id, f"GOAL {goal_cell.location}")
+            self.agent.log(f"Assigned goal at {goal_cell.location} to agent {agent_id}.")
+            self.remove_completed_goal(goal_cell)
+        else:
+            self.agent.log(f"Goal at {goal_cell.location} is not in the current goal list.")
