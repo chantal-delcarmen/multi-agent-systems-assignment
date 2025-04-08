@@ -52,10 +52,10 @@ class ExampleAgent(Brain):
         self.memory = AgentMemory(self._agent)
         self.comms = CommunicationManager(self.memory)
         self.energy_manager = EnergyManager(self.memory)
-        self.goal_planner = GoalPlanner(self._agent)
-        self.leader = LeaderCoordinator(self._agent)
-        self.team_task_manager = TeamTaskManager(self.leader, self.comms)  # Initialize TeamTaskManager
-        self.turn_counter = 0   # Keep track of number of turns
+        self.goal_planner = GoalPlanner(self._agent)  # Initialize GoalPlanner
+        self.leader_coordinator = LeaderCoordinator(self._agent, self.goal_planner)  # Initialize LeaderCoordinator
+        self.team_task_manager = TeamTaskManager(self.leader_coordinator, self.comms)  # Initialize TeamTaskManager
+        self.turn_counter = 0  # Keep track of number of turns
 
     # Handle functions:
     # You need to implement these functions
