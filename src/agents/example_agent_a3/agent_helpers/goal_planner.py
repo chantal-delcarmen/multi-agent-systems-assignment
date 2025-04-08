@@ -37,10 +37,18 @@ class GoalPlanner:
         survivor_goals = []
         agent_location = self.agent.location
 
-        # Example: If the world has a list of cells in `world.cells`
-        for cell in world.cells:
-            if cell.has_survivor():
-                survivor_goals.append(cell)
+        try:
+            # Ensure world.cells is iterable
+            for cell in world.cells:
+                # Ensure cell has the method has_survivor()
+                if hasattr(cell, "has_survivor") and callable(cell.has_survivor):
+                    if cell.has_survivor():
+                        survivor_goals.append(cell)
+                else:
+                    self.agent.log(f"Cell {cell} does not have a valid has_survivor() method.")
+        except AttributeError:
+            self.agent.log("Error: world.cells is not iterable or invalid.")
+            return
 
         # Sort by Manhattan distance for a simple "closest-first" approach.
         survivor_goals.sort(
@@ -51,6 +59,7 @@ class GoalPlanner:
         # Store the sorted goals
         self._survivor_goals = survivor_goals
         self._current_goal_index = 0  # Reset to start with the first goal
+        self.agent.log(f"Found {len(self._survivor_goals)} survivor goals.")
 
     def get_next_goal(self):
         """
