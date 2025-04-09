@@ -30,6 +30,7 @@ Mar 30, 2025
 
 """
 
+from aegis.api.location import create_location
 from .communication_manager import CommunicationManager
 
 class TeamTaskManager:
@@ -55,7 +56,11 @@ class TeamTaskManager:
             self.leader_coordinator.notify_task_completed(location)
 
             # Notify agents via the messaging system
-            message = f"TASK_COMPLETED {location[0]} {location[1]}"
+            message = {
+                "type": "TASK_COMPLETED",
+                "x": location.x,
+                "y": location.y,
+            }
             self.comms.send_message_to_all(message)
             self.leader_coordinator.agent.log(f"Task at {location} marked as completed and agents notified.")
 
@@ -94,10 +99,15 @@ class TeamTaskManager:
             location: The location of the task (InternalLocation object).
             required_agents: The number of agents required for the task.
         """
-        # Access the x and y attributes of the location
-        message = f"TASK {location.x} {location.y} {required_agents}"
+        # Send a structured message to all agents
+        message = {
+            "type": "TASK",
+            "x": location.x,
+            "y": location.y,
+            "required_agents": required_agents,
+        }
         self.comms.send_message_to_all(message)
-        self.leader_coordinator.agent.log(f"Notified agents about task at ({location.x}, {location.y}) requiring {required_agents} agents.")
+        self.leader_coordinator.agent.log(f"Notified agents about task at ({location.x}, {location.y}) requiring {required_agents} agents. Message: {message}")
 
     def call_agents_to_meet(self, location):
         """
@@ -106,9 +116,13 @@ class TeamTaskManager:
         Args:
             location: The location where agents should meet.
         """
-        message = f"MEET {location[0]} {location[1]}"
+        message = {
+            "type": "MEET",
+            "x": location.x,
+            "y": location.y,
+        }
         self.comms.send_message_to_all(message)
-        self.leader_coordinator.agent.log(f"Called agents to meet at {location}.")
+        self.leader_coordinator.agent.log(f"Called agents to meet at {location}. Message: {message}")
 
     def handle_task_message(self, message):
         """
@@ -117,11 +131,16 @@ class TeamTaskManager:
         Args:
             message: The parsed message to handle.
         """
-        if message["type"] == "TASK_COMPLETED":
-            location = message["location"]
+        if message["type"] == "TASK":
+            location = create_location(message["x"], message["y"])
+            required_agents = message["required_agents"]
+            self.add_task(location, required_agents)
+            self.leader_coordinator.agent.log(f"Received TASK message for location {location} requiring {required_agents} agents.")
+        elif message["type"] == "TASK_COMPLETED":
+            location = create_location(message["x"], message["y"])
             self.mark_task_completed(location)
         elif message["type"] == "MEET":
-            location = message["location"]
+            location = create_location(message["x"], message["y"])
             self.leader_coordinator.agent.log(f"Received MEET message for location {location}.")
 
     def mark_task_completed(self, location):
