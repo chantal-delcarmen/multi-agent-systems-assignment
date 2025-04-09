@@ -146,6 +146,9 @@ class ExampleAgent(Brain):
             self.send_and_end_turn(MOVE(Direction.CENTER))
             return
 
+        # Log the world state for debugging
+        self.log_world_state(world)
+
         # If the agent is the leader, perform leader-specific tasks.
         if self.leader_coordinator.should_lead():
             self._agent.log("I am the leader. Finding survivor goals.")
