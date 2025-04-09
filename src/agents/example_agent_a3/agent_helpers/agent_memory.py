@@ -8,7 +8,6 @@ Chantal del Carmen, Zainab Majid, Mohammad Akif Hasan, Vincent Iyegbuye
 Course: CPSC 383 - Winter 2025 | T05
 Assignment 3 - Multi-Agent Systems
 Mar 30, 2025
-
 """
 
 class AgentMemory:
@@ -26,133 +25,74 @@ class AgentMemory:
         self.agent_locations = {}       # Maps agent IDs to their locations
 
     def set_turn_counter(self, turn_counter):
-        """"
-        Set the turn counter for the agent.
-        :param turn_counter: The current turn number
-        """
+        """Set the turn counter for the agent."""
         self.turn_counter = turn_counter
     
     def get_turn_counter(self):
-        """
-        Get the current turn counter for the agent."
-        :return: The current turn number
-        """
+        """Get the current turn counter for the agent."""
         return self.turn_counter
 
     def update_location(self, x, y):
-        """
-        Update the agent's location."
-        :param x: x-coordinate of the agent's new location
-        :param y: y-coordinate of the agent's new location
-        """
+        """Update the agent's location."""
         self.location = (x, y)
 
     def get_location(self):
-        """
-        Get the agent's current location."
-        :return: The agent's current location as a tuple (x, y)
-        """
+        """Get the agent's current location."""
         return self.location
 
     def receive_message(self, message):
-        """
-        Store a received message in the agent's memory."
-        :param message: The message to be stored
-        """
+        """Store a received message in the agent's memory."""
         self.messages_received.append(message)
 
     def get_messages(self):
-        """ Retrieve all received messages. """
+        """Retrieve all received messages."""
         return self.messages_received
 
     def add_found_location(self, x, y):
-        """
-        Add a found survivor location to the agent's memory.
-        :param x: x-coordinate of the survivor's location
-        :param y: y-coordinate of the survivor's location
-        """
+        """Add a found survivor location to the agent's memory."""
         self.known_survivors.add((x, y))
 
     def get_found_locations(self):
-        """
-        Get all known survivor locations.
-        :return: A set of survivor locations as (x, y) tuples
-        """
+        """Get all known survivor locations."""
         return self.known_survivors
 
     def add_done_location(self, x, y):
-        """
-        Add a completed task location to the agent's memory.
-        :param x: x-coordinate of the completed task's location
-        :param y: y-coordinate of the completed task's location
-        """
+        """Add a completed task location to the agent's memory."""
         self.completed_tasks.add((x, y))
 
     def get_done_locations(self):
-        """
-        Get all completed task locations.
-        :return: A set of completed task locations as (x, y) tuples
-        """
+        """Get all completed task locations."""
         return self.completed_tasks
 
     def set_current_task(self, agent_id, x, y):
-        """
-        Set the current task for the agent and add it to assignments.
-        :param x: x-coordinate of the task's location
-        :param y: y-coordinate of the task's location
-        """
+        """Set the current task for the agent and add it to assignments."""
         self.agent_id = agent_id
         self.current_task = (x, y)
         self.add_assignment(self.agent_id, x, y)
 
     def get_current_task(self):
-        """
-        Get the current task assigned to the agent.
-        :return: The current task as a tuple (x, y), or None if no task is assigned.
-        """
+        """Get the current task assigned to the agent."""
         return self.current_task
 
     def clear_current_task(self):
-        """
-        Clear the current task assigned to the agent.
-        """
+        """Clear the current task assigned to the agent."""
         self.current_task = None
 
     def add_assignment(self, agent_id, x, y):
-        """
-        Add an assignment to the agent's memory.
-        :param agent_id: The ID of the agent assigned to the task
-        :param x: x-coordinate of the task's location
-        :param y: y-coordinate of the task's location
-        """
+        """Add an assignment to the agent's memory."""
         self.assignments[agent_id] = (x, y)
 
     def get_assignments(self):
-        """
-        Get all assignments stored in the agent's memory.
-        :return: A dictionary of assignments (agent_id -> location)
-        """
+        """Get all assignments stored in the agent's memory."""
         return self.assignments
     
     def mark_cell_as_observed(self, current_location):
-        """
-        Mark the cell as observed by adding it to the known survivors set.
-        :param current_location: The location of the cell to be marked as observed
-        """
-        agent_id = self.agent.get_agent_id()  # Use get_agent_id
-        print(f"Agent {agent_id} marked cell {current_location} as observed.")
+        """Mark the cell as observed by adding it to the known survivors set."""
         self.known_survivors.add(current_location)
         
     def is_cell_observed(self, current_location):
-        """
-        Check if the cell has been observed by the agent.
-        :param current_location: The location of the cell to be checked
-        :return: True if the cell has been observed, False otherwise
-        """
-        agent_id = self.agent.get_agent_id()  # Use get_agent_id
-        ans = current_location in self.known_survivors
-        print(f"Agent {agent_id} checked cell {current_location}: {'observed' if ans else 'not observed'}")
-        return ans
+        """Check if the cell has been observed by the agent."""
+        return current_location in self.known_survivors
 
     def get_assigned_task(self):
         """Retrieve the currently assigned task."""
@@ -163,7 +103,16 @@ class AgentMemory:
         self.assigned_task = task
 
     def update_agent_location(self, agent_id, location):
+        """Update the location of a specific agent."""
         self.agent_locations[agent_id] = location
 
     def get_agent_location(self, agent_id):
+        """Get the location of a specific agent."""
         return self.agent_locations.get(agent_id, None)
+
+    def get_all_agents(self):
+        """
+        Retrieve a list of all agent IDs currently tracked.
+        :return: A list of agent IDs.
+        """
+        return list(self.agent_locations.keys())
