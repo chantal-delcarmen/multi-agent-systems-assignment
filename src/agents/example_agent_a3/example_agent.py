@@ -22,7 +22,7 @@ from aegis import (
     Survivor,
 )
 from a3.agent import BaseAgent, Brain, AgentController
-from aegis.api.location import create_location 
+from aegis.api.location import create_location
 
 # Helper imports
 from .agent_helpers.agent_memory import AgentMemory
@@ -31,8 +31,8 @@ from .agent_helpers.energy_manager import EnergyManager
 from .agent_helpers.astar_pathfinder import AStarPathfinder
 from .agent_helpers.goal_planner import GoalPlanner
 from .agent_helpers.leader_coordinator import LeaderCoordinator
-from .agent_helpers.communication_manager import CommunicationManager
 from .agent_helpers.team_task_manager import TeamTaskManager
+
 """
 Class ExampleAgent:
 This class is responsible for implementing the agent's logic
@@ -43,8 +43,8 @@ Chantal del Carmen, Zainab Majid, Mohammad Akif Hasan, Vincent Iyegbuye
 Course: CPSC 383 - Winter 2025 | T05
 Assignment 3 - Multi-Agent Systems
 Mar 30, 2025
-
 """
+
 class ExampleAgent(Brain):
     def __init__(self) -> None:
         super().__init__()
@@ -60,6 +60,9 @@ class ExampleAgent(Brain):
     # Handle the result of sending a message
     @override
     def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
+        """
+        Handle the result of sending a message.
+        """
         # Log the raw SEND_MESSAGE_RESULT object for debugging
         if not smr.msg:
             self._agent.log("SEND_MESSAGE_RESULT contains no message. Skipping.")
@@ -88,55 +91,70 @@ class ExampleAgent(Brain):
         """
         # Log the observation result for debugging
         self._agent.log(f"OBSERVE_RESULT received: {ovr}")
-        self._agent.log(f"Observation details: {ovr}")
 
         # Extract the observed cell information
         cell_info = ovr.cell_info
         life_signals = ovr.life_signals
 
         # Log the cell information
-        self._agent.log(f"Observed cell at location {cell_info.location}: {cell_info}")
+        if cell_info:
+            self._agent.log(f"Observed cell at location {cell_info.location}: {cell_info}")
+        else:
+            self._agent.log("No cell information available in OBSERVE_RESULT.")
+            return
 
         # Check if the observed cell contains rubble
         if isinstance(cell_info.top_layer, Rubble):
-            location = (cell_info.location.x, cell_info.location.y)
+            location = cell_info.location
 
             # Use the remove_agents attribute to determine the number of required agents
             required_agents = cell_info.top_layer.remove_agents
 
             # Add the task to the TeamTaskManager
-            self.team_task_manager.add_task(location, required_agents)
+            self.team_task_manager.add_task(location, required_agents, task_type="DIG")
             self._agent.log(f"Added rubble task at {location} requiring {required_agents} agents.")
         else:
             self._agent.log(f"No rubble detected at {cell_info.location}.")
 
         # Check if the observed cell contains life signals (e.g., survivors)
-        if life_signals.size() > 0:
+        if life_signals and life_signals.size() > 0:
             self._agent.log(f"Detected {life_signals.size()} life signals at {cell_info.location}.")
-            # Optionally, prioritize this cell for rescue
+            # Prioritize this cell for rescue
             for i in range(life_signals.size()):
                 signal = life_signals.get(i)
                 if signal > 0:  # Positive signals indicate survivors
                     self._agent.log(f"Survivor detected with energy level {signal} at {cell_info.location}.")
+                    # Add a task to save the survivor
+                    self.team_task_manager.add_task(cell_info.location, 1, task_type="SAVE")
         else:
             self._agent.log(f"No life signals detected at {cell_info.location}.")
 
     # Handle the result of saving a survivor
     @override
     def handle_save_surv_result(self, ssr: SAVE_SURV_RESULT) -> None:
-        self._agent.log(f"SAVE_SURV_RESULT: {ssr}")
-        self._agent.log(f"{ssr}")
-        print("#--- You need to implement handle_save_surv_result function! ---#")
+        """
+        Handle the result of saving a survivor.
+        """
+        self._agent.log(f"SAVE_SURV_RESULT received: {ssr}")
+        if ssr.success:
+            self._agent.log("Successfully saved a survivor!")
+        else:
+            self._agent.log("Failed to save a survivor.")
 
     # Handle the result of predicting the world
     @override
     def handle_predict_result(self, prd: PREDICT_RESULT) -> None:
-        self._agent.log(f"PREDICT_RESULT: {prd}")
-        self._agent.log(f"{prd}")
+        """
+        Handle the result of predicting the world.
+        """
+        self._agent.log(f"PREDICT_RESULT received: {prd}")
 
     # Think function
     @override
     def think(self) -> None:
+        """
+        Main decision-making function for the agent.
+        """
         self._agent.log("Thinking")
 
         # Retrieve the current state of the world.
@@ -148,7 +166,6 @@ class ExampleAgent(Brain):
 
         # Log the world state for debugging
         self._agent.log("World retrieved successfully.")
-        # self.log_world_state(world)
 
         # If the agent is the leader, perform leader-specific tasks.
         if self.leader_coordinator.should_lead():
@@ -163,8 +180,6 @@ class ExampleAgent(Brain):
 
         # Fetch the cell at the agent’s current location.
         cell = world.get_cell_at(self._agent.get_location())
-        self._agent.log(f"Cell at current location: {cell}")
-
         if cell is None:
             self._agent.log("No cell found at the agent's current location.")
             self.send_and_end_turn(MOVE(Direction.CENTER))
@@ -172,16 +187,12 @@ class ExampleAgent(Brain):
 
         # Get the top layer at the agent’s current location.
         top_layer = cell.get_top_layer()
-        self._agent.log(f"Top layer at current location: {top_layer}")
-
-        # If the top layer is None, observe the surroundings.
         if top_layer is None:
             self._agent.log("Top layer is None. Observing surroundings.")
             current_location = self._agent.get_location()
 
             # Check if the cell has already been observed
             if self.memory.is_cell_observed(current_location):
-                self._agent.log(f"Cell {current_location} has already been observed. Exploring a new direction.")
                 unexplored_direction = self.find_unexplored_direction(world, cell)
                 if unexplored_direction:
                     self.send_and_end_turn(MOVE(unexplored_direction))
@@ -220,7 +231,6 @@ class ExampleAgent(Brain):
                 self.send_and_end_turn(MOVE(direction))
                 return
             else:
-                # If the path is empty, stay in place
                 self.send_and_end_turn(MOVE(Direction.CENTER))
                 return
 
@@ -235,35 +245,16 @@ class ExampleAgent(Brain):
 
     # Send a command and end your turn
     def send_and_end_turn(self, command: AgentCommand):
-        """Send a command and end your turn."""
+        """
+        Send a command and end your turn.
+        """
         self._agent.log(f"SENDING {command}")
         self._agent.send(command)
         self.turn_counter += 1
         self.memory.set_turn_counter(self.turn_counter)
         self._agent.send(END_TURN())
 
-    # Find survivor (goal cell) in the world
-    def find_survivor(self, world):
-        # Iterate over all cells in the world grid
-        for row in world.get_world_grid():
-            for cell in row:
-                # If the cell has not been observed, observe it
-                if not self.memory.is_cell_observed(cell.location):
-                    self._agent.log(f"Observing cell at {cell.location}")
-                    self.send_and_end_turn(OBSERVE(cell.location))
-                    return None  # Wait for the observation result
-
-                # Check if the cell has survivors
-                if cell.has_survivors:
-                    return cell
-
-                # If the cell has rubble, observe it to detect life signals
-                if isinstance(cell.top_layer, Rubble):
-                    self._agent.log(f"Rubble detected at {cell.location}. Observing for life signals.")
-                    self.send_and_end_turn(OBSERVE(cell.location))
-                    return None  # Wait for the observation result
-        return None
-
+    # Find an unexplored direction
     def find_unexplored_direction(self, world, current_location):
         """
         Find an unexplored direction from the current location.
@@ -281,14 +272,12 @@ class ExampleAgent(Brain):
         self._agent.log("No unexplored directions found.")
         return None
 
+    # Perform the assigned task
     def perform_assigned_task(self):
         """
         Perform the task assigned by the leader.
-        This could involve moving to a location, digging rubble, saving a survivor, etc.
         """
-        # Retrieve the assigned task from memory
         assigned_task = self.memory.get_assigned_task()
-
         if not assigned_task:
             self._agent.log("No assigned task. Exploring a new direction.")
             unexplored_direction = self.find_unexplored_direction(self.get_world(), self._agent.get_location())
@@ -298,7 +287,6 @@ class ExampleAgent(Brain):
                 self.send_and_end_turn(MOVE(Direction.CENTER))
             return
 
-        # Handle the assigned task
         task_type = assigned_task["type"]
         task_location = assigned_task["location"]
 
@@ -321,12 +309,31 @@ class ExampleAgent(Brain):
             else:
                 self.send_and_end_turn(MOVE(Direction.CENTER))
 
-    def log_world_state(self, world):
+    # Find survivor (goal cell) in the world
+    def find_survivor(self, world):
         """
-        Log the initial state of the world for debugging.
+        Search for a survivor in the world grid.
         """
-        self._agent.log("Logging world state:")
+        self._agent.log("Searching for survivors in the world.")
+        # Iterate over all cells in the world grid
         for row in world.get_world_grid():
             for cell in row:
-                self._agent.log(f"Cell at {cell.location}: {cell}")
+                # If the cell has not been observed, observe it
+                if not self.memory.is_cell_observed(cell.location):
+                    self._agent.log(f"Observing cell at {cell.location}")
+                    self.send_and_end_turn(OBSERVE(cell.location))
+                    return None  # Wait for the observation result
 
+                # Check if the cell has survivors
+                if cell.has_survivors:
+                    self._agent.log(f"Survivor found at {cell.location}")
+                    return cell
+
+                # If the cell has rubble, observe it to detect life signals
+                if isinstance(cell.top_layer, Rubble):
+                    self._agent.log(f"Rubble detected at {cell.location}. Observing for life signals.")
+                    self.send_and_end_turn(OBSERVE(cell.location))
+                    return None  # Wait for the observation result
+
+        self._agent.log("No survivors found in the world.")
+        return None

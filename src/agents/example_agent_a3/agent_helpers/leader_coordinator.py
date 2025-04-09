@@ -30,16 +30,17 @@ class LeaderCoordinator:
         """
         self.agent = agent
         self.goal_planner = goal_planner  # Use GoalPlanner for goal management
-        self.is_leader = self.agent.get_agent_id().id == 1  # Leader is agent with ID 1
         self.assignments = {}  # Tracks agent assignments (agent_id -> task)
         self.team_task_managers = []  # List of TeamTaskManager instances
+        self.survivors_remaining = []  # Tracks remaining survivors to be saved
 
-    def should_lead(self):
+    def should_lead(self) -> bool:
         """
         Determine if this agent should act as the leader.
-        :return: True if the agent is the leader, False otherwise.
+
+        :return: True if this agent is the leader (ID 1), False otherwise.
         """
-        return self.is_leader
+        return self.agent.get_agent_id().id == 1
 
     def assign_agents_to_goals(self, agents, world):
         """
@@ -57,22 +58,22 @@ class LeaderCoordinator:
 
         available_agents = list(agents)
 
-        print(f"DEBUG: Survivor goals: {survivor_goals}")
-        print(f"DEBUG: Available agents: {available_agents}")
+        self.agent.log(f"DEBUG: Survivor goals: {survivor_goals}")
+        self.agent.log(f"DEBUG: Available agents: {available_agents}")
 
         for goal in survivor_goals:
             if not available_agents:
                 break
             closest_agent = self.find_closest_agent(available_agents, goal.location, world)
-            print(f"DEBUG: Closest agent for goal {goal.location}: {closest_agent}")
+            self.agent.log(f"DEBUG: Closest agent for goal {goal.location}: {closest_agent}")
             if closest_agent is not None:
-                self.assignments[closest_agent] = goal
+                self.assignments[closest_agent.get_agent_id().id] = goal
                 self.goal_planner.assign_goal_to_agent(closest_agent, goal)
                 available_agents = [
                     agent for agent in available_agents
                     if agent.get_agent_id().id != closest_agent.get_agent_id().id
                 ]
-        print(f"DEBUG: Final assignments: {self.assignments}")
+        self.agent.log(f"DEBUG: Final assignments: {self.assignments}")
 
     def find_closest_agent(self, agents, target_location, world):
         """
@@ -82,36 +83,48 @@ class LeaderCoordinator:
             agents: List of available agents.
             target_location: The location to find the closest agent to.
 
-        :return: The ID of the closest agent, or None if no agents are available.
+        :return: The closest agent instance, or None if no agents are available.
         """
         best_agent = None
         best_cost = float('inf')
         for agent in agents:
             start_cell = world.get_cell_at(agent.get_location())
             goal_cell = world.get_cell_at(target_location)
-            print(f"DEBUG: Agent {agent.get_agent_id().id} start: {start_cell.location}, goal: {goal_cell.location}")
+            self.agent.log(f"DEBUG: Agent {agent.get_agent_id().id} start: {start_cell.location}, goal: {goal_cell.location}")
 
             pathfinder = AStarPathfinder(world, agent)
             path = pathfinder.find_path(start_cell, goal_cell)
-            print(f"DEBUG: Path for agent {agent.get_agent_id().id}: {path}")
+            self.agent.log(f"DEBUG: Path for agent {agent.get_agent_id().id}: {path}")
 
             # Convert goal_cell.location to a tuple before checking cost_so_far
             goal_location_tuple = (goal_cell.location.x, goal_cell.location.y)
             if path and goal_location_tuple in pathfinder.cost_so_far:
                 cost = pathfinder.cost_so_far[goal_location_tuple]
-                print(f"DEBUG: Cost for agent {agent.get_agent_id().id} to goal {goal_location_tuple}: {cost}")
+                self.agent.log(f"DEBUG: Cost for agent {agent.get_agent_id().id} to goal {goal_location_tuple}: {cost}")
                 if cost < best_cost:
                     best_cost = cost
                     best_agent = agent
-        print(f"DEBUG: Best agent for location {target_location}: {best_agent}")
+        self.agent.log(f"DEBUG: Best agent for location {target_location}: {best_agent}")
         return best_agent
 
     def mark_survivor_saved(self, location):
+        """
+        Mark a survivor as saved at the given location.
+
+        Args:
+            location: The location where the survivor was saved.
+        """
         if location in self.survivors_remaining:
             self.survivors_remaining.remove(location)
+            self.agent.log(f"DEBUG: Survivor at {location} marked as saved.")
 
     def all_survivors_saved(self):
-        return len(self.survivors_remaining) == 0   # to be implemented
+        """
+        Check if all survivors have been saved.
+
+        :return: True if all survivors are saved, False otherwise.
+        """
+        return len(self.survivors_remaining) == 0
 
     def notify_task_completed(self, location):
         """
@@ -133,3 +146,4 @@ class LeaderCoordinator:
         for manager in self.team_task_managers:
             if hasattr(manager, "notify_task_completed"):
                 manager.notify_task_completed(location)
+        self.agent.log(f"DEBUG: Task at {location} marked as completed.")
