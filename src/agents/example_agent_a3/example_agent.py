@@ -52,10 +52,10 @@ class ExampleAgent(Brain):
         self.memory = AgentMemory(self._agent)
         self.comms = CommunicationManager(self.memory)
         self.energy_manager = EnergyManager(self.memory)
-        self.goal_planner = GoalPlanner(self._agent)  # Initialize GoalPlanner
-        self.leader_coordinator = LeaderCoordinator(self._agent, self.goal_planner)  # Initialize LeaderCoordinator
-        self.team_task_manager = TeamTaskManager(self.leader_coordinator, self.comms)  # Initialize TeamTaskManager
-        self.turn_counter = 0  # Keep track of number of turns
+        self.goal_planner = GoalPlanner(self._agent)
+        self.leader_coordinator = LeaderCoordinator(self._agent, self.goal_planner)
+        self.team_task_manager = TeamTaskManager(self.leader_coordinator, self.comms)
+        self.turn_counter = 0
 
     # Handle the result of sending a message
     @override
@@ -167,61 +167,43 @@ class ExampleAgent(Brain):
             self.send_and_end_turn(MOVE(Direction.CENTER))
             return
 
-        # Retrieve agents by iterating through the world grid
-        agents = []
-        for row in world.get_world_grid():
-            for cell in row:
-                if hasattr(cell, "agent_id_list") and cell.agent_id_list:
-                    agents.extend(cell.agent_id_list)
-                    # Update the location of each agent in memory
-                    for agent_id in cell.agent_id_list:
-                        self.memory.update_agent_location(agent_id, cell.location)
+        # Check the agent's current location and cell
+        current_location = self._agent.get_location()
+        cell = world.get_cell_at(current_location)
 
-        self._agent.log(f"DEBUG: Retrieved agents and updated locations: {self.memory.agent_locations}")
-
-        # If the agent is the leader, perform leader-specific tasks.
-        if self.leader_coordinator.should_lead():
-            self._agent.log("I am the leader. Finding survivor goals.")
-            self.goal_planner.find_survivor_goals(world)  # Use GoalPlanner to find survivor goals
-            self._agent.log("Assigning agents to goals.")
-            self.leader_coordinator.assign_agents_to_goals(agents, world)  # Assign tasks using LeaderCoordinator
-        else:
-            self._agent.log("I am not the leader. Performing assigned tasks.")
-            self.perform_assigned_task()  # Perform tasks assigned by the leader
-
-        # Fetch the cell at the agent’s current location.
-        cell = world.get_cell_at(self._agent.get_location())
-        if cell is None:
-            self._agent.log("No cell found at the agent's current location.")
+        if not cell:
+            self._agent.log(f"No cell found at {current_location}. Moving to CENTER.")
             self.send_and_end_turn(MOVE(Direction.CENTER))
             return
 
-        # Get the top layer at the agent’s current location.
+        # If the agent is the leader, delegate leader-specific tasks
+        if self.leader_coordinator.should_lead():
+            self._agent.log("I am the leader. Delegating tasks.")
+            self.leader_coordinator.assign_agents_to_goals(self.memory.get_all_agents(), world)
+        else:
+            self._agent.log("I am not the leader. Performing assigned tasks.")
+            self.perform_assigned_task()
+
+        # Handle the top layer of the current cell
         top_layer = cell.get_top_layer()
         if top_layer is None:
-            self._agent.log("Top layer is None. Observing surroundings.")
-            current_location = self._agent.get_location()
-
-            # Check if the cell has already been observed
-            if self.memory.is_cell_observed(current_location):
+            if not self.memory.is_cell_observed(current_location):
+                self.memory.mark_cell_as_observed(current_location)
+                self.send_and_end_turn(OBSERVE(current_location))
+            else:
                 unexplored_direction = self.find_unexplored_direction(world, cell)
                 if unexplored_direction:
                     self.send_and_end_turn(MOVE(unexplored_direction))
                 else:
                     self.send_and_end_turn(MOVE(Direction.CENTER))
-                return
-
-            self.memory.mark_cell_as_observed(current_location)
-            self.send_and_end_turn(OBSERVE(current_location))
             return
 
-        # If a survivor is present, save it and end the turn.
+        # Handle specific objects in the top layer
         if isinstance(top_layer, Survivor):
             self._agent.log("Survivor detected. Sending SAVE_SURV command.")
             self.send_and_end_turn(SAVE_SURV())
             return
 
-        # If rubble is present, coordinate a TEAM_DIG task.
         if isinstance(top_layer, Rubble):
             location = (cell.location.x, cell.location.y)
             self._agent.log(f"Rubble detected at {location}. Coordinating TEAM_DIG.")
@@ -229,29 +211,11 @@ class ExampleAgent(Brain):
             self.send_and_end_turn(TEAM_DIG())
             return
 
-        # Find a goal (e.g., survivor location)
-        goal_cell = self.goal_planner.get_next_goal()  # Use GoalPlanner to get the next goal
-        if goal_cell is not None:
-            start_cell = cell
-            pathfinder = AStarPathfinder(world, self._agent)
-            path = pathfinder.find_path(start_cell, goal_cell)
-
-            if len(path) > 1:
-                next_move = path[1]
-                direction = start_cell.location.direction_to(next_move.location)
-                self.send_and_end_turn(MOVE(direction))
-                return
-            else:
-                self.send_and_end_turn(MOVE(Direction.CENTER))
-                return
-
-        # Fallback: Explore a new direction
+        # Fallback exploration
         unexplored_direction = self.find_unexplored_direction(world, cell)
         if unexplored_direction:
-            self._agent.log(f"Exploring unexplored direction: {unexplored_direction}")
             self.send_and_end_turn(MOVE(unexplored_direction))
         else:
-            self._agent.log("No unexplored directions available. Moving to CENTER.")
             self.send_and_end_turn(MOVE(Direction.CENTER))
 
     # Send a command and end your turn
@@ -270,9 +234,7 @@ class ExampleAgent(Brain):
         """
         Find an unexplored direction from the current cell.
         """
-        self._agent.log(f"Finding unexplored direction from {current_cell.location}")
-        current_location = current_cell.location  # Use the location attribute of the cell
-
+        current_location = current_cell.location
         for direction in Direction:
             neighbor_location = create_location(
                 current_location.x + direction.dx,
@@ -280,10 +242,7 @@ class ExampleAgent(Brain):
             )
             neighbor_cell = world.get_cell_at(neighbor_location)
             if neighbor_cell and not self.memory.is_cell_observed(neighbor_location):
-                self._agent.log(f"Found unexplored direction: {direction} to {neighbor_location}")
                 return direction
-
-        self._agent.log("No unexplored directions found.")
         return None
 
     # Perform the assigned task
@@ -293,13 +252,11 @@ class ExampleAgent(Brain):
         """
         assigned_task = self.memory.get_assigned_task()
         if not assigned_task:
-            self._agent.log("No assigned task. Exploring a new direction.")
             world = self.get_world()
             current_location = self._agent.get_location()
-            current_cell = world.get_cell_at(current_location)  # Fetch the cell at the agent's current location
+            current_cell = world.get_cell_at(current_location)
 
             if current_cell is None:
-                self._agent.log("No cell found at the agent's current location. Moving to CENTER.")
                 self.send_and_end_turn(MOVE(Direction.CENTER))
                 return
 
@@ -314,27 +271,14 @@ class ExampleAgent(Brain):
         task_location = assigned_task["location"]
 
         if task_type == "DIG":
-            self._agent.log(f"Performing DIG task at {task_location}.")
             self.send_and_end_turn(TEAM_DIG())
         elif task_type == "SAVE":
-            self._agent.log(f"Performing SAVE task at {task_location}.")
             self.send_and_end_turn(SAVE_SURV())
         elif task_type == "MOVE":
-            self._agent.log(f"Moving to assigned location {task_location}.")
             current_location = self._agent.get_location()
             direction = current_location.direction_to(task_location)
             self.send_and_end_turn(MOVE(direction))
         else:
-            self._agent.log(f"Unknown task type: {task_type}. Exploring instead.")
-            world = self.get_world()
-            current_location = self._agent.get_location()
-            current_cell = world.get_cell_at(current_location)
-
-            if current_cell is None:
-                self._agent.log("No cell found at the agent's current location. Moving to CENTER.")
-                self.send_and_end_turn(MOVE(Direction.CENTER))
-                return
-
             unexplored_direction = self.find_unexplored_direction(world, current_cell)
             if unexplored_direction:
                 self.send_and_end_turn(MOVE(unexplored_direction))

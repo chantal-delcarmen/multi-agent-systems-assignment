@@ -46,11 +46,12 @@ class GoalPlanner:
                     # Check the has_survivors attribute instead of a method
                     if getattr(cell, "has_survivors", False):
                         survivor_goals.append(cell)
-                    else:
-                        self.agent.log(f"Cell {cell} does not have survivors.")
         except AttributeError:
             self.agent.log("Error: world.get_world_grid() is not iterable or invalid.")
             return
+
+        # Log the total number of survivor goals found
+        self.agent.log(f"Found {len(survivor_goals)} cells with survivors.")
 
         # Sort by Manhattan distance for a simple "closest-first" approach.
         survivor_goals.sort(
