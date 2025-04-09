@@ -235,7 +235,7 @@ class ExampleAgent(Brain):
     # Find an unexplored direction
     def find_unexplored_direction(self, world: World, current_cell: Cell):
         """
-        Find an unexplored direction from the current cell.
+        Find an unexplored direction from the current cell, avoiding killer cells and fire cells.
         """
         current_location = current_cell.location
         for direction in Direction:
@@ -250,6 +250,10 @@ class ExampleAgent(Brain):
 
             neighbor_cell = world.get_cell_at(neighbor_location)
             if neighbor_cell and not self.memory.is_cell_observed(neighbor_location):
+                # Avoid killer cells and fire cells
+                if neighbor_cell.is_killer_cell() or neighbor_cell.is_fire_cell():
+                    self._agent.log(f"Avoiding dangerous cell at {neighbor_location} (KILLER_CELL or FIRE_CELL).")
+                    continue
                 return direction
         return None
 
