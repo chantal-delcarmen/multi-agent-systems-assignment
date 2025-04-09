@@ -263,11 +263,13 @@ class ExampleAgent(Brain):
         self._agent.send(END_TURN())
 
     # Find an unexplored direction
-    def find_unexplored_direction(self, world, current_location):
+    def find_unexplored_direction(self, world, current_cell):
         """
-        Find an unexplored direction from the current location.
+        Find an unexplored direction from the current cell.
         """
-        self._agent.log(f"Finding unexplored direction from {current_location}")
+        self._agent.log(f"Finding unexplored direction from {current_cell.location}")
+        current_location = current_cell.location  # Use the location attribute of the cell
+
         for direction in Direction:
             neighbor_location = create_location(
                 current_location.x + direction.dx,
@@ -277,6 +279,7 @@ class ExampleAgent(Brain):
             if neighbor_cell and not self.memory.is_cell_observed(neighbor_location):
                 self._agent.log(f"Found unexplored direction: {direction} to {neighbor_location}")
                 return direction
+
         self._agent.log("No unexplored directions found.")
         return None
 
