@@ -147,7 +147,8 @@ class ExampleAgent(Brain):
             return
 
         # Log the world state for debugging
-        self.log_world_state(world)
+        self._agent.log("World retrieved successfully.")
+        # self.log_world_state(world)
 
         # If the agent is the leader, perform leader-specific tasks.
         if self.leader_coordinator.should_lead():
@@ -229,8 +230,7 @@ class ExampleAgent(Brain):
             self._agent.log(f"Exploring unexplored direction: {unexplored_direction}")
             self.send_and_end_turn(MOVE(unexplored_direction))
         else:
-            # If no unexplored directions are available, move to the CENTER
-            self._agent.log("No tasks or goals found. Moving to CENTER.")
+            self._agent.log("No unexplored directions available. Moving to CENTER.")
             self.send_and_end_turn(MOVE(Direction.CENTER))
 
     # Send a command and end your turn
@@ -238,8 +238,8 @@ class ExampleAgent(Brain):
         """Send a command and end your turn."""
         self._agent.log(f"SENDING {command}")
         self._agent.send(command)
-        self.turn_counter += 1   # Increment the agent's turn number
-        self.memory.set_turn_counter(self.turn_counter) # Update the agent's turn number in memory
+        self.turn_counter += 1
+        self.memory.set_turn_counter(self.turn_counter)
         self._agent.send(END_TURN())
 
     # Find survivor (goal cell) in the world
@@ -264,20 +264,21 @@ class ExampleAgent(Brain):
                     return None  # Wait for the observation result
         return None
 
-    def find_unexplored_direction(self, world, current_cell):
+    def find_unexplored_direction(self, world, current_location):
         """
-        Find an unexplored direction from the current cell.
+        Find an unexplored direction from the current location.
         """
+        self._agent.log(f"Finding unexplored direction from {current_location}")
         for direction in Direction:
-            # Use the correct method to calculate the neighbor location
             neighbor_location = create_location(
-                current_cell.x + direction.dx,  # Access x directly
-                current_cell.y + direction.dy   # Access y directly
+                current_location.x + direction.dx,
+                current_location.y + direction.dy
             )
             neighbor_cell = world.get_cell_at(neighbor_location)
-            print(f"Checking neighbor cell at {neighbor_location}: {neighbor_cell}")
             if neighbor_cell and not self.memory.is_cell_observed(neighbor_location):
+                self._agent.log(f"Found unexplored direction: {direction} to {neighbor_location}")
                 return direction
+        self._agent.log("No unexplored directions found.")
         return None
 
     def perform_assigned_task(self):
