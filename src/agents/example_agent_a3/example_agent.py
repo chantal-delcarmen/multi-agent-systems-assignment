@@ -1,4 +1,13 @@
 from typing import override
+# import sys
+# import os
+
+# # Add the `src` directory to the Python path
+# current_dir = os.path.dirname(os.path.abspath(__file__))
+# src_dir = os.path.abspath(os.path.join(current_dir, "../src"))
+# if src_dir not in sys.path:
+#     sys.path.append(src_dir)
+
 
 # If you need to import anything, add it to the import below.
 from aegis import (
@@ -22,9 +31,10 @@ from aegis import (
     Survivor,
 )
 from a3.agent import BaseAgent, Brain, AgentController
-from aegis.api.location import create_location
+from aegis.api.location import Location, create_location
 from aegis.api.cell import Cell
 from aegis.api.world import World
+from aegis.common.direction import Direction
 
 # Helper imports
 from .agent_helpers.agent_memory import AgentMemory
@@ -47,12 +57,32 @@ Assignment 3 - Multi-Agent Systems
 Mar 30, 2025
 """
 
+def get_direction_from_locations(start: Location, end: Location) -> Direction | None:
+    """
+    Calculate the direction from the start location to the end location.
+
+    Args:
+        start: The starting location (Location object).
+        end: The ending location (Location object).
+
+    Returns:
+        The Direction from start to end, or None if no valid direction exists.
+    """
+    dx = end.x - start.x
+    dy = end.y - start.y
+
+    for direction in Direction:
+        if direction.dx == dx and direction.dy == dy:
+            return direction
+    return None
+
+
 class ExampleAgent(Brain):
     def __init__(self) -> None:
         super().__init__()
         self._agent: AgentController = BaseAgent.get_agent()
         self.memory = AgentMemory(self._agent)
-        self.comms = CommunicationManager(self.memory)
+        self.comms = CommunicationManager(self.memory, self._agent)
         self.energy_manager = EnergyManager(self.memory)
         self.goal_planner = GoalPlanner(self._agent)
         self.leader_coordinator = LeaderCoordinator(self._agent, self.goal_planner)
@@ -91,14 +121,12 @@ class ExampleAgent(Brain):
         """
         Handle the result of observing the world.
         """
-        # Log the observation result for debugging
         self._agent.log(f"OBSERVE_RESULT received: {ovr}")
 
         # Extract the observed cell information
         cell_info = ovr.cell_info
         life_signals = ovr.life_signals
 
-        # Log the cell information
         if cell_info:
             self._agent.log(f"Observed cell at location {cell_info.location}: {cell_info}")
         else:
@@ -108,11 +136,7 @@ class ExampleAgent(Brain):
         # Check if the observed cell contains rubble
         if isinstance(cell_info.top_layer, Rubble):
             location = cell_info.location
-
-            # Use the remove_agents attribute to determine the number of required agents
             required_agents = cell_info.top_layer.remove_agents
-
-            # Add the task to the TeamTaskManager
             self.team_task_manager.add_task(location, required_agents, task_type="DIG")
             self._agent.log(f"Added rubble task at {location} requiring {required_agents} agents.")
         else:
@@ -121,14 +145,10 @@ class ExampleAgent(Brain):
         # Check if the observed cell contains life signals (e.g., survivors)
         if life_signals and life_signals.size() > 0:
             self._agent.log(f"Detected {life_signals.size()} life signals at {cell_info.location}.")
-            # Log each life signal for debugging
             for i in range(life_signals.size()):
                 signal = life_signals.get(i)
-                self._agent.log(f"Life signal {i}: {signal}")
-
                 if signal > 0:  # Positive signals indicate survivors
                     self._agent.log(f"Survivor detected with energy level {signal} at {cell_info.location}.")
-                    # Add a task to save the survivor
                     self.team_task_manager.add_task(cell_info.location, 1, task_type="SAVE")
                     self._agent.log(f"Added SAVE task for survivor at {cell_info.location}.")
         else:
@@ -154,7 +174,7 @@ class ExampleAgent(Brain):
         """
         self._agent.log(f"PREDICT_RESULT received: {prd}")
 
-    # Think function
+    # Main decision-making function
     @override
     def think(self) -> None:
         """
@@ -237,8 +257,29 @@ class ExampleAgent(Brain):
     def find_unexplored_direction(self, world: World, current_cell: Cell):
         """
         Find an unexplored direction from the current cell, avoiding killer cells and fire cells.
+        If the agent is in a dangerous cell, prioritize escaping to a safer cell.
         """
         current_location = current_cell.location
+
+        # Check if the current cell is dangerous
+        if current_cell.is_killer_cell() or current_cell.is_fire_cell():
+            self._agent.log(f"Agent is in a dangerous cell at {current_location}. Attempting to escape.")
+            for direction in Direction:
+                neighbor_location = create_location(
+                    current_location.x + direction.dx,
+                    current_location.y + direction.dy
+                )
+
+                # Check if the neighbor location is within bounds
+                if not (0 <= neighbor_location.x < world.width and 0 <= neighbor_location.y < world.height):
+                    continue
+
+                neighbor_cell = world.get_cell_at(neighbor_location)
+                if neighbor_cell and not neighbor_cell.is_killer_cell() and not neighbor_cell.is_fire_cell():
+                    self._agent.log(f"Escaping to safer cell at {neighbor_location}.")
+                    return direction
+
+        # If not in a dangerous cell, find an unexplored direction
         for direction in Direction:
             neighbor_location = create_location(
                 current_location.x + direction.dx,
@@ -256,8 +297,8 @@ class ExampleAgent(Brain):
                     self._agent.log(f"Avoiding dangerous cell at {neighbor_location} (KILLER_CELL or FIRE_CELL).")
                     continue
                 return direction
-        return None
 
+        return None
 
     # Perform the assigned task
     def perform_assigned_task(self):
@@ -270,70 +311,96 @@ class ExampleAgent(Brain):
         current_cell = world.get_cell_at(current_location)
 
         if not assigned_task:
-            # Use A* to find the nearest unexplored cell
-            pathfinder = AStarPathfinder(world, self._agent)
-            unexplored_cells = [
-                cell for row in world.get_world_grid() for cell in row
-                if not self.memory.is_cell_observed(cell.location)
-            ]
-            if unexplored_cells:
-                best_path = None
-                best_cost = float('inf')
-                for target_cell in unexplored_cells:
-                    path = pathfinder.find_path(current_cell, target_cell)
-                    if path and pathfinder.cost_so_far.get((target_cell.location.x, target_cell.location.y), float('inf')) < best_cost:
-                        best_path = path
-                        best_cost = pathfinder.cost_so_far[(target_cell.location.x, target_cell.location.y)]
-                if best_path:
-                    self.send_and_end_turn(MOVE(best_path[0].direction))
-                    return
-            self.send_and_end_turn(MOVE(Direction.CENTER))
+            self._agent.log("No assigned task. Exploring the grid.")
+            unexplored_direction = self.find_unexplored_direction(world, current_cell)
+            if unexplored_direction:
+                self.send_and_end_turn(MOVE(unexplored_direction))
+            else:
+                self.send_and_end_turn(MOVE(Direction.CENTER))
             return
 
         task_type = assigned_task["type"]
         task_location = assigned_task["location"]
 
         if task_type == "DIG":
+            self._agent.log(f"Performing DIG task at {task_location}.")
             self.send_and_end_turn(TEAM_DIG())
         elif task_type == "SAVE":
+            self._agent.log(f"Performing SAVE task at {task_location}.")
             self.send_and_end_turn(SAVE_SURV())
         elif task_type == "MOVE":
+            self._agent.log(f"Moving to assigned location {task_location}.")
             goal_cell = world.get_cell_at(task_location)
             pathfinder = AStarPathfinder(world, self._agent)
             path = pathfinder.find_path(current_cell, goal_cell)
             if path:
                 self.send_and_end_turn(MOVE(path[0].direction))
             else:
-                self.send_and_end_turn(MOVE(Direction.CENTER))
+                self._agent.log("No valid path found. Exploring instead.")
+                unexplored_direction = self.find_unexplored_direction(world, current_cell)
+                if unexplored_direction:
+                    self.send_and_end_turn(MOVE(unexplored_direction))
+                else:
+                    self.send_and_end_turn(MOVE(Direction.CENTER))
         else:
-            self.send_and_end_turn(MOVE(Direction.CENTER))
+            self._agent.log(f"Unknown task type: {task_type}. Exploring instead.")
+            unexplored_direction = self.find_unexplored_direction(world, current_cell)
+            if unexplored_direction:
+                self.send_and_end_turn(MOVE(unexplored_direction))
+            else:
+                self.send_and_end_turn(MOVE(Direction.CENTER))
 
     # Find survivor (goal cell) in the world
     def find_survivor(self, world: World):
         """
-        Search for survivors in the world grid and add tasks for them.
+        Search for survivors in the world using GoalPlanner and execute tasks for them.
         """
-        self._agent.log("Searching for survivors in the world.")
-        # Iterate over all cells in the world grid
-        for row in world.get_world_grid():
-            for cell in row:
-                # If the cell has not been observed, observe it
-                if not self.memory.is_cell_observed(cell.location):
-                    self._agent.log(f"Observing cell at {cell.location}")
-                    self.memory.mark_cell_as_observed(cell.location)  # Mark as observed
-                    self.send_and_end_turn(OBSERVE(cell.location))
-                    return  # Wait for the observation result before continuing
+        self._agent.log("Searching for survivors in the world using GoalPlanner.")
+        current_location = self._agent.get_location()
+        current_cell = world.get_cell_at(current_location)
 
-                # Check if the cell has survivors
-                if cell.has_survivors:
-                    self._agent.log(f"Survivor found at {cell.location}. Adding SAVE task.")
-                    self.team_task_manager.add_task(cell.location, 1, task_type="SAVE")
+        # Use GoalPlanner to find all survivor goals
+        self.goal_planner.find_survivor_goals(world)
 
-                # Check if the cell has rubble
-                top_layer = cell.get_top_layer()  # Correctly access the top layer
-                if isinstance(top_layer, Rubble):
-                    self._agent.log(f"Rubble detected at {cell.location}. Adding DIG task.")
-                    required_agents = top_layer.remove_agents
-                    self.team_task_manager.add_task(cell.location, required_agents, task_type="DIG")
+        # Log all survivors found
+        all_goals = self.goal_planner.get_all_goals()
+        if all_goals:
+            self._agent.log(f"Survivors found at the following locations: {[goal.location for goal in all_goals]}")
+        else:
+            self._agent.log("No survivors found in the world.")
 
-        self._agent.log("Finished searching for survivors.")
+        # Get the next goal (survivor location) from the GoalPlanner
+        next_goal = self.goal_planner.get_next_goal()
+
+        if next_goal:
+            self._agent.log(f"Next survivor goal found at {next_goal.location}. Calculating path.")
+            path = self.goal_planner.find_path_to_goal(world, current_cell, next_goal)
+
+            if path:
+                # Add a SAVE task for the survivor
+                self._agent.log(f"Path to survivor at {next_goal.location} found. Adding SAVE task.")
+                self.team_task_manager.add_task(next_goal.location, 1)
+
+                # Calculate the direction to the first step in the path
+                first_step = path[0]
+                direction = get_direction_from_locations(current_location, first_step.location)
+                if direction:
+                    self._agent.log(f"Moving towards survivor at {next_goal.location} in direction {direction}.")
+                    self.send_and_end_turn(MOVE(direction))
+                else:
+                    self._agent.log("Failed to calculate direction for the first step in the path.")
+                    self.send_and_end_turn(MOVE(Direction.CENTER))
+            else:
+                # If no path is found, log the issue and mark the goal as unreachable
+                self._agent.log(f"No path to survivor at {next_goal.location}. Marking as unreachable.")
+                self.goal_planner.mark_goal_unreachable(next_goal)
+                self._agent.log(f"Replanning survivor goals after marking {next_goal.location} as unreachable.")
+                self.goal_planner.replan_goals(world)
+        else:
+            # If no goals are available, fallback to exploration
+            self._agent.log("No survivor goals available. Exploring the grid.")
+            unexplored_direction = self.find_unexplored_direction(world, current_cell)
+            if unexplored_direction:
+                self.send_and_end_turn(MOVE(unexplored_direction))
+            else:
+                self.send_and_end_turn(MOVE(Direction.CENTER))

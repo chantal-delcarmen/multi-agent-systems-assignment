@@ -25,8 +25,9 @@ from aegis.common.commands.agent_commands.SEND_MESSAGE import SEND_MESSAGE
 from aegis.common.agent_id_list import AgentIDList
 
 class CommunicationManager:
-    def __init__(self, memory):
+    def __init__(self, memory, agent):
         self.memory = memory
+        self.agent = agent
 
     def generate_found_message(self, location):
         """

@@ -91,12 +91,13 @@ class TeamTaskManager:
         Notify agents about a new task.
 
         Args:
-            location: The location of the task.
+            location: The location of the task (InternalLocation object).
             required_agents: The number of agents required for the task.
         """
-        message = f"TASK {location[0]} {location[1]} {required_agents}"
+        # Access the x and y attributes of the location
+        message = f"TASK {location.x} {location.y} {required_agents}"
         self.comms.send_message_to_all(message)
-        self.leader_coordinator.agent.log(f"Notified agents about task at {location} requiring {required_agents} agents.")
+        self.leader_coordinator.agent.log(f"Notified agents about task at ({location.x}, {location.y}) requiring {required_agents} agents.")
 
     def call_agents_to_meet(self, location):
         """

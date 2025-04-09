@@ -8,9 +8,9 @@ Chantal del Carmen, Zainab Majid, Mohammad Akif Hasan, Vincent Iyegbuye
 Course: CPSC 383 - Winter 2025 | T05
 Assignment 3 - Multi-Agent Systems
 Mar 30, 2025
-
 """
 
+from .astar_pathfinder import AStarPathfinder
 
 class GoalPlanner:
     def __init__(self, agent):
@@ -28,42 +28,64 @@ class GoalPlanner:
     def find_survivor_goals(self, world):
         """
         Scans the world to find all cells that contain survivors and stores
-        them in an internal list (self._survivor_goals), sorted by Manhattan
-        distance from the agent's current location.
+        them in an internal list (self._survivor_goals), sorted by path length
+        using A* pathfinding.
 
         Args:
             world: The world instance that provides access to cells.
         """
         survivor_goals = []
-        
-        agent_location = self.agent.get_location()  # Replace with the correct method or property
+        agent_location = self.agent.get_location()
+        current_cell = world.get_cell_at(agent_location)
+
         self.agent.log(f"DEBUG: Agent location: {agent_location}")
 
         try:
             # Iterate over the 2D grid of cells
             for row in world.get_world_grid():
                 for cell in row:
-                    # Check the has_survivors attribute instead of a method
+                    # Check if the cell has survivors
                     if getattr(cell, "has_survivors", False):
-                        survivor_goals.append(cell)
+                        # Use A* to check if the goal is reachable
+                        path = self.find_path_to_goal(world, current_cell, cell)
+                        if path:
+                            survivor_goals.append((cell, path))
         except AttributeError:
             self.agent.log("Error: world.get_world_grid() is not iterable or invalid.")
             return
 
         # Log the total number of survivor goals found
-        self.agent.log(f"Found {len(survivor_goals)} cells with survivors.")
+        self.agent.log(f"Found {len(survivor_goals)} reachable cells with survivors.")
 
-        # Sort by Manhattan distance for a simple "closest-first" approach.
-        survivor_goals.sort(
-            key=lambda c: abs(c.location.x - agent_location.x)
-                          + abs(c.location.y - agent_location.y)
-        )
+        # Sort by path length for a "closest-first" approach
+        survivor_goals.sort(key=lambda item: len(item[1]))
 
         # Store the sorted goals
-        self._survivor_goals = survivor_goals
+        self._survivor_goals = [goal[0] for goal in survivor_goals]
         self._current_goal_index = 0  # Reset to start with the first goal
-        self.agent.log(f"Found {len(self._survivor_goals)} survivor goals.")
         self.agent.log(f"Added {len(self._survivor_goals)} survivor goals.")
+
+    def find_path_to_goal(self, world, start_cell, goal_cell):
+        """
+        Finds the shortest path from the start cell to the goal cell using A*.
+
+        Args:
+            world: The world instance.
+            start_cell: The starting cell (agent's current location).
+            goal_cell: The goal cell (e.g., survivor location).
+
+        Returns:
+            A list of cells representing the path, or an empty list if no path is found.
+        """
+        self.agent.log(f"Calculating path from {start_cell.location} to {goal_cell.location}.")
+        pathfinder = AStarPathfinder(world, self.agent)
+        path = pathfinder.find_path(start_cell, goal_cell)
+
+        if path:
+            self.agent.log(f"Path to {goal_cell.location} found with {len(path)} steps.")
+        else:
+            self.agent.log(f"No path to {goal_cell.location} found.")
+        return path
 
     def get_next_goal(self):
         """
