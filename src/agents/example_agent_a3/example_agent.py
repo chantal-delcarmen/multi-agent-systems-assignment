@@ -167,12 +167,20 @@ class ExampleAgent(Brain):
         # Log the world state for debugging
         self._agent.log("World retrieved successfully.")
 
+        # Retrieve agents by iterating through the world grid
+        agents = []
+        for row in world.get_world_grid():
+            for cell in row:
+                if hasattr(cell, "agent_id_list") and cell.agent_id_list:
+                    agents.extend(cell.agent_id_list)
+
+        self._agent.log(f"DEBUG: Retrieved agents: {agents}")
+
         # If the agent is the leader, perform leader-specific tasks.
         if self.leader_coordinator.should_lead():
             self._agent.log("I am the leader. Finding survivor goals.")
             self.goal_planner.find_survivor_goals(world)  # Use GoalPlanner to find survivor goals
             self._agent.log("Assigning agents to goals.")
-            agents = world.get_all_agents()  # Get all agents in the world
             self.leader_coordinator.assign_agents_to_goals(agents, world)  # Assign tasks using LeaderCoordinator
         else:
             self._agent.log("I am not the leader. Performing assigned tasks.")
