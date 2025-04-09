@@ -57,11 +57,6 @@ class AStarPathfinder:
         self.came_from = {}
         self.cost_so_far = {}
 
-        # Debugging print statements - REMOVE BEFORE SUBMISSION
-        print(f"START: {start_cell.location}")
-        print(f"GOAL: {goal_cell.location}")
-        print(f"Path from {start_cell.location} to {goal_cell.location}:")
-
         # Push the start cell onto the frontier
         # Initialize the cost_so_far and came_from dictionaries
         heapq.heappush(self.frontier, (0, start_cell.location))
@@ -89,7 +84,6 @@ class AStarPathfinder:
 
         # If the goal cell is not in the came_from dictionary, then no path was found
         if goal_cell.location not in self.came_from:
-            print("No path found to goal")
             return []
     
         # Reconstruct the path from the goal cell to the start cell
@@ -100,10 +94,5 @@ class AStarPathfinder:
             current_cell = self.world.get_cell_at(self.came_from[current_cell.location])
         path.append(start_cell)
         path.reverse()
-
-        # Debugging print statements - REMOVE BEFORE SUBMISSION
-        print("Final path:")
-        for step in path:
-            print(f"Step: {step.location}")
 
         return path

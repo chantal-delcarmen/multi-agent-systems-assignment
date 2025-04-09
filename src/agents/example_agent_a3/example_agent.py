@@ -257,26 +257,36 @@ class ExampleAgent(Brain):
                 return direction
         return None
 
+
     # Perform the assigned task
     def perform_assigned_task(self):
         """
         Perform the task assigned by the leader.
         """
         assigned_task = self.memory.get_assigned_task()
+        world = self.get_world()
+        current_location = self._agent.get_location()
+        current_cell = world.get_cell_at(current_location)
+
         if not assigned_task:
-            world = self.get_world()
-            current_location = self._agent.get_location()
-            current_cell = world.get_cell_at(current_location)
-
-            if current_cell is None:
-                self.send_and_end_turn(MOVE(Direction.CENTER))
-                return
-
-            unexplored_direction = self.find_unexplored_direction(world, current_cell)
-            if unexplored_direction:
-                self.send_and_end_turn(MOVE(unexplored_direction))
-            else:
-                self.send_and_end_turn(MOVE(Direction.CENTER))
+            # Use A* to find the nearest unexplored cell
+            pathfinder = AStarPathfinder(world, self._agent)
+            unexplored_cells = [
+                cell for row in world.get_world_grid() for cell in row
+                if not self.memory.is_cell_observed(cell.location)
+            ]
+            if unexplored_cells:
+                best_path = None
+                best_cost = float('inf')
+                for target_cell in unexplored_cells:
+                    path = pathfinder.find_path(current_cell, target_cell)
+                    if path and pathfinder.cost_so_far.get((target_cell.location.x, target_cell.location.y), float('inf')) < best_cost:
+                        best_path = path
+                        best_cost = pathfinder.cost_so_far[(target_cell.location.x, target_cell.location.y)]
+                if best_path:
+                    self.send_and_end_turn(MOVE(best_path[0].direction))
+                    return
+            self.send_and_end_turn(MOVE(Direction.CENTER))
             return
 
         task_type = assigned_task["type"]
@@ -287,15 +297,15 @@ class ExampleAgent(Brain):
         elif task_type == "SAVE":
             self.send_and_end_turn(SAVE_SURV())
         elif task_type == "MOVE":
-            current_location = self._agent.get_location()
-            direction = current_location.direction_to(task_location)
-            self.send_and_end_turn(MOVE(direction))
-        else:
-            unexplored_direction = self.find_unexplored_direction(world, current_cell)
-            if unexplored_direction:
-                self.send_and_end_turn(MOVE(unexplored_direction))
+            goal_cell = world.get_cell_at(task_location)
+            pathfinder = AStarPathfinder(world, self._agent)
+            path = pathfinder.find_path(current_cell, goal_cell)
+            if path:
+                self.send_and_end_turn(MOVE(path[0].direction))
             else:
                 self.send_and_end_turn(MOVE(Direction.CENTER))
+        else:
+            self.send_and_end_turn(MOVE(Direction.CENTER))
 
     # Find survivor (goal cell) in the world
     def find_survivor(self, world):
