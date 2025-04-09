@@ -119,13 +119,16 @@ class ExampleAgent(Brain):
         # Check if the observed cell contains life signals (e.g., survivors)
         if life_signals and life_signals.size() > 0:
             self._agent.log(f"Detected {life_signals.size()} life signals at {cell_info.location}.")
-            # Prioritize this cell for rescue
+            # Log each life signal for debugging
             for i in range(life_signals.size()):
                 signal = life_signals.get(i)
+                self._agent.log(f"Life signal {i}: {signal}")
+
                 if signal > 0:  # Positive signals indicate survivors
                     self._agent.log(f"Survivor detected with energy level {signal} at {cell_info.location}.")
                     # Add a task to save the survivor
                     self.team_task_manager.add_task(cell_info.location, 1, task_type="SAVE")
+                    self._agent.log(f"Added SAVE task for survivor at {cell_info.location}.")
         else:
             self._agent.log(f"No life signals detected at {cell_info.location}.")
 
@@ -164,17 +167,17 @@ class ExampleAgent(Brain):
             self.send_and_end_turn(MOVE(Direction.CENTER))
             return
 
-        # Log the world state for debugging
-        self._agent.log("World retrieved successfully.")
-
         # Retrieve agents by iterating through the world grid
         agents = []
         for row in world.get_world_grid():
             for cell in row:
                 if hasattr(cell, "agent_id_list") and cell.agent_id_list:
                     agents.extend(cell.agent_id_list)
+                    # Update the location of each agent in memory
+                    for agent_id in cell.agent_id_list:
+                        self.memory.update_agent_location(agent_id, cell.location)
 
-        self._agent.log(f"DEBUG: Retrieved agents: {agents}")
+        self._agent.log(f"DEBUG: Retrieved agents and updated locations: {self.memory.agent_locations}")
 
         # If the agent is the leader, perform leader-specific tasks.
         if self.leader_coordinator.should_lead():

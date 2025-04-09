@@ -40,16 +40,16 @@ class GoalPlanner:
         self.agent.log(f"DEBUG: Agent location: {agent_location}")
 
         try:
-            # Ensure world.cells is iterable
-            for cell in world.cells:
-                # Ensure cell has the method has_survivor()
-                if hasattr(cell, "has_survivor") and callable(cell.has_survivor):
-                    if cell.has_survivor():
+            # Iterate over the 2D grid of cells
+            for row in world.get_world_grid():
+                for cell in row:
+                    # Check the has_survivors attribute instead of a method
+                    if getattr(cell, "has_survivors", False):
                         survivor_goals.append(cell)
-                else:
-                    self.agent.log(f"Cell {cell} does not have a valid has_survivor() method.")
+                    else:
+                        self.agent.log(f"Cell {cell} does not have survivors.")
         except AttributeError:
-            self.agent.log("Error: world.cells is not iterable or invalid.")
+            self.agent.log("Error: world.get_world_grid() is not iterable or invalid.")
             return
 
         # Sort by Manhattan distance for a simple "closest-first" approach.

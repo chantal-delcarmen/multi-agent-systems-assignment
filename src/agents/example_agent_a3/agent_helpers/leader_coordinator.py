@@ -31,6 +31,7 @@ class LeaderCoordinator:
         self.agent = agent
         self.goal_planner = goal_planner  # Use GoalPlanner for goal management
         self.assignments = {}  # Tracks agent assignments (agent_id -> task)
+        self.agent_locations = {}  # Tracks agent locations (agent_id -> location)
         self.team_task_managers = []  # List of TeamTaskManager instances
         self.survivors_remaining = []  # Tracks remaining survivors to be saved
 
@@ -42,6 +43,33 @@ class LeaderCoordinator:
         """
         return self.agent.get_agent_id().id == 1
 
+    def update_agent_locations(self, agents, world):
+        """
+        Update the locations of all agents in the world.
+
+        Args:
+            agents: List of all agents in the world.
+            world: The current world instance.
+        """
+        grid = world.get_world_grid()
+        if not grid:
+            self.agent.log("ERROR: World grid is empty or invalid.")
+            return
+
+        for row in grid:
+            for cell in row:
+                # Log the cell's location and agent_id_list for debugging
+                self.agent.log(f"DEBUG: Cell at {getattr(cell, 'location', 'unknown')} has agent_id_list: {getattr(cell, 'agent_id_list', None)}")
+                
+                # Check if the cell has an agent_id_list and update locations
+                if hasattr(cell, "agent_id_list") and cell.agent_id_list:
+                    for agent_id in cell.agent_id_list:
+                        self.agent_locations[agent_id] = cell.location
+                        self.agent.log(f"DEBUG: Updated location for agent {agent_id}: {cell.location}")
+        
+        # Log the final agent locations
+        self.agent.log(f"DEBUG: Final updated agent locations: {self.agent_locations}")
+
     def assign_agents_to_goals(self, agents, world):
         """
         Assign agents to survivor goals using the GoalPlanner.
@@ -52,6 +80,9 @@ class LeaderCoordinator:
         """
         if not self.should_lead():
             return
+
+        # Update agent locations
+        self.update_agent_locations(agents, world)
 
         # Fetch all survivor goals from the GoalPlanner
         survivor_goals = self.goal_planner.get_all_goals()
@@ -88,7 +119,11 @@ class LeaderCoordinator:
         best_agent = None
         best_cost = float('inf')
         for agent in agents:
-            start_cell = world.get_cell_at(agent.get_location())
+            agent_location = self.agent_locations.get(agent.get_agent_id().id)
+            if not agent_location:
+                continue
+
+            start_cell = world.get_cell_at(agent_location)
             goal_cell = world.get_cell_at(target_location)
             self.agent.log(f"DEBUG: Agent {agent.get_agent_id().id} start: {start_cell.location}, goal: {goal_cell.location}")
 

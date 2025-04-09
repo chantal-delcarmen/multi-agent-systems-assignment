@@ -23,6 +23,7 @@ class AgentMemory:
         self.completed_tasks = set()    # Create empty set for completed tasks
         self.messages_received = []     # List to store received messages
         self.assignments = {}           # Dictionary to store assignments (agent_id -> location)
+        self.agent_locations = {}       # Maps agent IDs to their locations
 
     def set_turn_counter(self, turn_counter):
         """"
@@ -160,3 +161,9 @@ class AgentMemory:
     def set_assigned_task(self, task):
         """Set a new assigned task."""
         self.assigned_task = task
+
+    def update_agent_location(self, agent_id, location):
+        self.agent_locations[agent_id] = location
+
+    def get_agent_location(self, agent_id):
+        return self.agent_locations.get(agent_id, None)
