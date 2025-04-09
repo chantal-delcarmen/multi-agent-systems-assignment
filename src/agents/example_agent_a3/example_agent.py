@@ -183,6 +183,7 @@ class ExampleAgent(Brain):
             self._agent.log("I am the leader. Delegating tasks.")
             agents = self.memory.get_all_agents()
             self.leader_coordinator.assign_agents_to_goals(agents, world)
+            self.find_survivor(world)  # Search for survivors as part of leader tasks
         else:
             self._agent.log("I am not the leader. Performing assigned tasks.")
             self.perform_assigned_task()
@@ -308,9 +309,9 @@ class ExampleAgent(Brain):
             self.send_and_end_turn(MOVE(Direction.CENTER))
 
     # Find survivor (goal cell) in the world
-    def find_survivor(self, world):
+    def find_survivor(self, world: World):
         """
-        Search for a survivor in the world grid.
+        Search for survivors in the world grid and add tasks for them.
         """
         self._agent.log("Searching for survivors in the world.")
         # Iterate over all cells in the world grid
@@ -319,19 +320,20 @@ class ExampleAgent(Brain):
                 # If the cell has not been observed, observe it
                 if not self.memory.is_cell_observed(cell.location):
                     self._agent.log(f"Observing cell at {cell.location}")
+                    self.memory.mark_cell_as_observed(cell.location)  # Mark as observed
                     self.send_and_end_turn(OBSERVE(cell.location))
-                    return None  # Wait for the observation result
+                    return  # Wait for the observation result before continuing
 
                 # Check if the cell has survivors
                 if cell.has_survivors:
-                    self._agent.log(f"Survivor found at {cell.location}")
-                    return cell
+                    self._agent.log(f"Survivor found at {cell.location}. Adding SAVE task.")
+                    self.team_task_manager.add_task(cell.location, 1, task_type="SAVE")
 
-                # If the cell has rubble, observe it to detect life signals
-                if isinstance(cell.top_layer, Rubble):
-                    self._agent.log(f"Rubble detected at {cell.location}. Observing for life signals.")
-                    self.send_and_end_turn(OBSERVE(cell.location))
-                    return None  # Wait for the observation result
+                # Check if the cell has rubble
+                top_layer = cell.get_top_layer()  # Correctly access the top layer
+                if isinstance(top_layer, Rubble):
+                    self._agent.log(f"Rubble detected at {cell.location}. Adding DIG task.")
+                    required_agents = top_layer.remove_agents
+                    self.team_task_manager.add_task(cell.location, required_agents, task_type="DIG")
 
-        self._agent.log("No survivors found in the world.")
-        return None
+        self._agent.log("Finished searching for survivors.")
