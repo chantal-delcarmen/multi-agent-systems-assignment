@@ -57,10 +57,6 @@ class ExampleAgent(Brain):
         self.team_task_manager = TeamTaskManager(self.leader_coordinator, self.comms)  # Initialize TeamTaskManager
         self.turn_counter = 0  # Keep track of number of turns
 
-    # Handle functions:
-    # You need to implement these functions
-    # TODO: connect helper classes to this one 
-    
     # Handle the result of sending a message
     @override
     def handle_send_message_result(self, smr: SEND_MESSAGE_RESULT) -> None:
@@ -91,12 +87,15 @@ class ExampleAgent(Brain):
         Handle the result of observing the world.
         """
         # Log the observation result for debugging
-        self._agent.log(f"OBSERVE_RESULT: {ovr}")
-        self._agent.log(f"{ovr}")
+        self._agent.log(f"OBSERVE_RESULT received: {ovr}")
+        self._agent.log(f"Observation details: {ovr}")
 
         # Extract the observed cell information
         cell_info = ovr.cell_info
         life_signals = ovr.life_signals
+
+        # Log the cell information
+        self._agent.log(f"Observed cell at location {cell_info.location}: {cell_info}")
 
         # Check if the observed cell contains rubble
         if isinstance(cell_info.top_layer, Rubble):
@@ -108,6 +107,8 @@ class ExampleAgent(Brain):
             # Add the task to the TeamTaskManager
             self.team_task_manager.add_task(location, required_agents)
             self._agent.log(f"Added rubble task at {location} requiring {required_agents} agents.")
+        else:
+            self._agent.log(f"No rubble detected at {cell_info.location}.")
 
         # Check if the observed cell contains life signals (e.g., survivors)
         if life_signals.size() > 0:
@@ -117,6 +118,8 @@ class ExampleAgent(Brain):
                 signal = life_signals.get(i)
                 if signal > 0:  # Positive signals indicate survivors
                     self._agent.log(f"Survivor detected with energy level {signal} at {cell_info.location}.")
+        else:
+            self._agent.log(f"No life signals detected at {cell_info.location}.")
 
     # Handle the result of saving a survivor
     @override
@@ -313,4 +316,13 @@ class ExampleAgent(Brain):
                 self.send_and_end_turn(MOVE(unexplored_direction))
             else:
                 self.send_and_end_turn(MOVE(Direction.CENTER))
+
+    def log_world_state(self, world):
+        """
+        Log the initial state of the world for debugging.
+        """
+        self._agent.log("Logging world state:")
+        for row in world.get_world_grid():
+            for cell in row:
+                self._agent.log(f"Cell at {cell.location}: {cell}")
 

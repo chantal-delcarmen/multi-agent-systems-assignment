@@ -74,8 +74,17 @@ class TeamTaskManager:
                 "completed": False,
                 "dig_count": 0,
             }
+            # Log the addition of the new task
+            self.leader_coordinator.agent.log(
+                f"Added new task at location {location} requiring {required_agents} agents."
+            )
             # Notify agents about the new task
             self.notify_agents_about_task(location, required_agents)
+        else:
+            # Log if the task already exists
+            self.leader_coordinator.agent.log(
+                f"Task at location {location} already exists. Skipping addition."
+            )
 
     def notify_agents_about_task(self, location, required_agents):
         """
