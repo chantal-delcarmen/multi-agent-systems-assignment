@@ -138,7 +138,8 @@ class AgentMemory:
         Mark the cell as observed by adding it to the known survivors set.
         :param current_location: The location of the cell to be marked as observed
         """
-        print(f"Agent {self.agent_id} marked cell {current_location} as observed.")
+        agent_id = self.agent.get_agent_id()  # Use get_agent_id
+        print(f"Agent {agent_id} marked cell {current_location} as observed.")
         self.known_survivors.add(current_location)
         
     def is_cell_observed(self, current_location):
@@ -147,8 +148,9 @@ class AgentMemory:
         :param current_location: The location of the cell to be checked
         :return: True if the cell has been observed, False otherwise
         """
+        agent_id = self.agent.get_agent_id()  # Use get_agent_id
         ans = current_location in self.known_survivors
-        print(f"Agent {self.agent_id} checked cell {current_location}: {'observed' if ans else 'not observed'}")
+        print(f"Agent {agent_id} checked cell {current_location}: {'observed' if ans else 'not observed'}")
         return ans
 
     def get_assigned_task(self):
