@@ -63,6 +63,10 @@ class LeaderCoordinator:
     def assign_agents_to_goals(self, agents, world):
         """
         Assign agents to survivor goals using the GoalPlanner.
+
+        Args:
+            agents: List of available agents.
+            world: The current world instance.
         """
         self.update_agent_locations(world)
         survivor_goals = self.goal_planner.get_all_goals()
@@ -74,18 +78,11 @@ class LeaderCoordinator:
             closest_agent = self.find_closest_agent(available_agents, goal.location, world)
             if closest_agent is not None:
                 self.assignments[closest_agent.get_agent_id().id] = goal
-                self.goal_planner.assign_goal_to_agent(closest_agent, goal)
+                self.goal_planner.assign_goal_to_agent(closest_agent.get_agent_id().id, goal)
                 available_agents = [
                     agent for agent in available_agents
                     if agent.get_agent_id().id != closest_agent.get_agent_id().id
                 ]
-
-        # Assign remaining agents to unexplored areas
-        for agent in available_agents:
-            unexplored_direction = self.find_unexplored_direction(world, self.agent_locations[agent.get_agent_id().id])
-            if unexplored_direction:
-                self.agent.log(f"Assigning agent {agent.get_agent_id().id} to explore {unexplored_direction}.")
-                self.assignments[agent.get_agent_id().id] = unexplored_direction
 
     def find_closest_agent(self, agents, target_location, world):
         """
@@ -144,6 +141,7 @@ class LeaderCoordinator:
         Args:
             location: The location of the completed task.
         """
+        # Remove the task from assignments
         agents_ids_to_remove = [
             agent_id for agent_id, task in self.assignments.items() if task.location == location
         ]
@@ -151,9 +149,9 @@ class LeaderCoordinator:
             del self.assignments[agent_id]
 
         # Notify the GoalPlanner that the goal is completed
-        self.goal_planner.remove_completed_goal(location)
+        goal_cell = next((goal for goal in self.goal_planner.get_all_goals() if goal.location == location), None)
+        if goal_cell:
+            self.goal_planner.remove_completed_goal(goal_cell)
 
-        # Notify team task managers
-        for manager in self.team_task_managers:
-            if hasattr(manager, "notify_task_completed"):
-                manager.notify_task_completed(location)
+        # Log the task completion
+        self.agent.log(f"Task at {location} completed and removed from assignments.")

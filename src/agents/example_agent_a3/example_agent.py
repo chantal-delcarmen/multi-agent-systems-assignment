@@ -23,6 +23,8 @@ from aegis import (
 )
 from a3.agent import BaseAgent, Brain, AgentController
 from aegis.api.location import create_location
+from aegis.api.cell import Cell
+from aegis.api.world import World
 
 # Helper imports
 from .agent_helpers.agent_memory import AgentMemory
@@ -208,7 +210,7 @@ class ExampleAgent(Brain):
         if isinstance(top_layer, Rubble):
             location = (cell.location.x, cell.location.y)
             self._agent.log(f"Rubble detected at {location}. Coordinating TEAM_DIG.")
-            self.team_task_manager.coordinate_team_dig(self._agent.get_id(), location)
+            self.team_task_manager.coordinate_team_dig(self._agent.get_agent_id(), location)
             self.send_and_end_turn(TEAM_DIG())
             return
 
@@ -231,7 +233,7 @@ class ExampleAgent(Brain):
         self._agent.send(END_TURN())
 
     # Find an unexplored direction
-    def find_unexplored_direction(self, world, current_cell):
+    def find_unexplored_direction(self, world: World, current_cell: Cell):
         """
         Find an unexplored direction from the current cell.
         """
@@ -241,6 +243,11 @@ class ExampleAgent(Brain):
                 current_location.x + direction.dx,
                 current_location.y + direction.dy
             )
+
+            # Check if the neighbor location is within bounds
+            if not (0 <= neighbor_location.x < world.width and 0 <= neighbor_location.y < world.height):
+                continue
+
             neighbor_cell = world.get_cell_at(neighbor_location)
             if neighbor_cell and not self.memory.is_cell_observed(neighbor_location):
                 return direction
