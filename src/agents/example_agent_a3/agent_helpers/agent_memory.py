@@ -12,8 +12,9 @@ Mar 30, 2025
 """
 
 class AgentMemory:
-    def __init__(self, agent_id):
-        self.agent_id = agent_id
+    def __init__(self, agent):
+        self.agent = agent
+        self.assigned_task = None
         self.location = None
         self.energy = 100
         self.current_task = None        # Assigned task (if any)
@@ -149,3 +150,11 @@ class AgentMemory:
         ans = current_location in self.known_survivors
         print(f"Agent {self.agent_id} checked cell {current_location}: {'observed' if ans else 'not observed'}")
         return ans
+
+    def get_assigned_task(self):
+        """Retrieve the currently assigned task."""
+        return self.assigned_task
+
+    def set_assigned_task(self, task):
+        """Set a new assigned task."""
+        self.assigned_task = task

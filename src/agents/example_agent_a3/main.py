@@ -1,4 +1,11 @@
 import sys
+import os
+
+# # Add the `src` directory to the Python path
+# current_dir = os.path.dirname(os.path.abspath(__file__))
+# src_dir = os.path.abspath(os.path.join(current_dir, "../.."))  # Adjust path to point to `src`
+# if src_dir not in sys.path:
+#     sys.path.append(src_dir)
 
 from a3.agent import BaseAgent
 from agents.example_agent_a3.example_agent import ExampleAgent

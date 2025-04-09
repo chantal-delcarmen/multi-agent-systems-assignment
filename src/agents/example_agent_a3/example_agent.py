@@ -265,11 +265,61 @@ class ExampleAgent(Brain):
         for direction in Direction:
             # Use the correct method to calculate the neighbor location
             neighbor_location = create_location(
-                current_cell.location.x + direction.dx,
-                current_cell.location.y + direction.dy
+                current_cell.x + direction.dx,  # Access x directly
+                current_cell.y + direction.dy   # Access y directly
             )
             neighbor_cell = world.get_cell_at(neighbor_location)
             print(f"Checking neighbor cell at {neighbor_location}: {neighbor_cell}")
             if neighbor_cell and not self.memory.is_cell_observed(neighbor_location):
                 return direction
         return None
+
+    def perform_assigned_task(self):
+        """
+        Perform the task assigned by the leader.
+        This could involve moving to a location, digging rubble, saving a survivor, etc.
+        """
+        # Retrieve the assigned task from memory
+        assigned_task = self.memory.get_assigned_task()
+
+        if not assigned_task:
+            self._agent.log("No assigned task. Exploring a new direction.")
+            unexplored_direction = self.find_unexplored_direction(self.get_world(), self._agent.get_location())
+            if unexplored_direction:
+                self.send_and_end_turn(MOVE(unexplored_direction))
+            else:
+                self.send_and_end_turn(MOVE(Direction.CENTER))
+            return
+
+        # Handle the assigned task
+        task_type = assigned_task["type"]
+        task_location = assigned_task["location"]
+
+        if task_type == "DIG":
+            self._agent.log(f"Performing DIG task at {task_location}.")
+            self.send_and_end_turn(TEAM_DIG())
+        elif task_type == "SAVE":
+            self._agent.log(f"Performing SAVE task at {task_location}.")
+            self.send_and_end_turn(SAVE_SURV())
+        elif task_type == "MOVE":
+            self._agent.log(f"Moving to assigned location {task_location}.")
+            current_location = self._agent.get_location()
+            direction = current_location.direction_to(task_location)
+            self.send_and_end_turn(MOVE(direction))
+        else:
+            self._agent.log(f"Unknown task type: {task_type}. Exploring instead.")
+            unexplored_direction = self.find_unexplored_direction(self.get_world(), self._agent.get_location())
+            if unexplored_direction:
+                self.send_and_end_turn(MOVE(unexplored_direction))
+            else:
+                self.send_and_end_turn(MOVE(Direction.CENTER))
+
+    def is_cell_observed(self, current_location):
+        """
+        Check if the cell has been observed by the agent.
+        :param current_location: The location of the cell to be checked
+        :return: True if the cell has been observed, False otherwise
+        """
+        ans = current_location in self.known_survivors
+        print(f"Agent {self.agent.get_id()} checked cell {current_location}: {'observed' if ans else 'not observed'}")
+        return ans
