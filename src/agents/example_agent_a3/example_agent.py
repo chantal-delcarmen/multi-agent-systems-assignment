@@ -291,7 +291,16 @@ class ExampleAgent(Brain):
         assigned_task = self.memory.get_assigned_task()
         if not assigned_task:
             self._agent.log("No assigned task. Exploring a new direction.")
-            unexplored_direction = self.find_unexplored_direction(self.get_world(), self._agent.get_location())
+            world = self.get_world()
+            current_location = self._agent.get_location()
+            current_cell = world.get_cell_at(current_location)  # Fetch the cell at the agent's current location
+
+            if current_cell is None:
+                self._agent.log("No cell found at the agent's current location. Moving to CENTER.")
+                self.send_and_end_turn(MOVE(Direction.CENTER))
+                return
+
+            unexplored_direction = self.find_unexplored_direction(world, current_cell)
             if unexplored_direction:
                 self.send_and_end_turn(MOVE(unexplored_direction))
             else:
@@ -314,7 +323,16 @@ class ExampleAgent(Brain):
             self.send_and_end_turn(MOVE(direction))
         else:
             self._agent.log(f"Unknown task type: {task_type}. Exploring instead.")
-            unexplored_direction = self.find_unexplored_direction(self.get_world(), self._agent.get_location())
+            world = self.get_world()
+            current_location = self._agent.get_location()
+            current_cell = world.get_cell_at(current_location)
+
+            if current_cell is None:
+                self._agent.log("No cell found at the agent's current location. Moving to CENTER.")
+                self.send_and_end_turn(MOVE(Direction.CENTER))
+                return
+
+            unexplored_direction = self.find_unexplored_direction(world, current_cell)
             if unexplored_direction:
                 self.send_and_end_turn(MOVE(unexplored_direction))
             else:
