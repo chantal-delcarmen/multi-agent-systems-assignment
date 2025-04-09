@@ -35,7 +35,9 @@ class GoalPlanner:
             world: The world instance that provides access to cells.
         """
         survivor_goals = []
-        agent_location = self.agent.location
+        
+        agent_location = self.agent.get_location()  # Replace with the correct method or property
+        self.agent.log(f"DEBUG: Agent location: {agent_location}")
 
         try:
             # Ensure world.cells is iterable
