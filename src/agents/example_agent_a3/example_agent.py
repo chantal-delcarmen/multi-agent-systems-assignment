@@ -323,3 +323,11 @@ class ExampleAgent(Brain):
         ans = current_location in self.known_survivors
         print(f"Agent {self.agent.get_id()} checked cell {current_location}: {'observed' if ans else 'not observed'}")
         return ans
+
+    def mark_cell_as_observed(self, current_location):
+        """
+        Mark the cell as observed by adding it to the known survivors set.
+        :param current_location: The location of the cell to be marked as observed
+        """
+        print(f"Agent {self.agent.get_id()} marked cell {current_location} as observed.")
+        self.known_survivors.add(current_location)
