@@ -179,7 +179,8 @@ class ExampleAgent(Brain):
         # If the agent is the leader, delegate leader-specific tasks
         if self.leader_coordinator.should_lead():
             self._agent.log("I am the leader. Delegating tasks.")
-            self.leader_coordinator.assign_agents_to_goals(self.memory.get_all_agents(), world)
+            agents = self.memory.get_all_agents()
+            self.leader_coordinator.assign_agents_to_goals(agents, world)
         else:
             self._agent.log("I am not the leader. Performing assigned tasks.")
             self.perform_assigned_task()

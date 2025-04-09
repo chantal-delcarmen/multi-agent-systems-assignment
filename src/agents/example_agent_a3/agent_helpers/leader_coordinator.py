@@ -63,10 +63,6 @@ class LeaderCoordinator:
     def assign_agents_to_goals(self, agents, world):
         """
         Assign agents to survivor goals using the GoalPlanner.
-
-        Args:
-            agents: List of available agents.
-            world: The current world instance.
         """
         self.update_agent_locations(world)
         survivor_goals = self.goal_planner.get_all_goals()
@@ -83,6 +79,13 @@ class LeaderCoordinator:
                     agent for agent in available_agents
                     if agent.get_agent_id().id != closest_agent.get_agent_id().id
                 ]
+
+        # Assign remaining agents to unexplored areas
+        for agent in available_agents:
+            unexplored_direction = self.find_unexplored_direction(world, self.agent_locations[agent.get_agent_id().id])
+            if unexplored_direction:
+                self.agent.log(f"Assigning agent {agent.get_agent_id().id} to explore {unexplored_direction}.")
+                self.assignments[agent.get_agent_id().id] = unexplored_direction
 
     def find_closest_agent(self, agents, target_location, world):
         """
